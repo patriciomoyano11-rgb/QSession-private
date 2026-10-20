@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="theme-color" content="#102746" /><meta name="description" content="Reporta una posible infracción o apela una medida de contenido en Q Session." /><title>Reportar contenido · Q Session</title><link rel="icon" href="/icons/qsession-icon-192.png" /><link rel="stylesheet" href="/legal.css?v=20260929-rights-v1" /><link rel="stylesheet" href="/qsession-sky-palette.css?v=20261016-sky-palette-v1" /></head>
+<body><main class="legal-shell">
+  <a class="legal-brand" href="/"><img src="/icons/qsession-icon-192.png" alt="" /><span><strong>Q Session</strong><small>REPORTE Y REVISIÓN</small></span></a>
+  <article class="legal-card">
+    <p class="legal-eyebrow">CANAL DE DERECHOS</p><h1>Cuéntanos qué contenido debemos revisar.</h1>
+    <p class="legal-lead">Este canal protege tanto a titulares como a anfitriones. La información se revisa antes de adoptar una decisión definitiva.</p>
+    <section class="legal-section"><h2>Reportar una posible infracción</h2>
+      <form id="contentReportForm" class="legal-form">
+        <div class="legal-form-grid"><label>Tu nombre<input id="reporterName" maxlength="120" required /></label><label>Correo de contacto<input id="reporterEmail" type="email" maxlength="180" required /></label></div>
+        <label>Actúas como<select id="claimantRole"><option value="owner">Titular de los derechos</option><option value="agent">Representante autorizado</option></select></label>
+        <div class="legal-form-grid"><label>Código de sala, si lo conoces<input id="reportedRoomCode" maxlength="6" placeholder="ABC123" /></label><label>Enlace del contenido<input id="reportedContentUrl" type="url" maxlength="800" placeholder="https://qsession.org/…" /></label></div>
+        <label>Obra o contenido protegido<textarea id="protectedWork" maxlength="1200" rows="4" required placeholder="Título, autor, registro o una descripción suficiente…"></textarea></label>
+        <label>Explicación de la infracción<textarea id="reportExplanation" maxlength="3000" rows="6" required placeholder="Indica qué material debe revisarse y por qué no está autorizado…"></textarea></label>
+        <label class="legal-check"><input id="reportGoodFaith" type="checkbox" required /><span>Declaro de buena fe que el uso señalado no está autorizado por el titular, su agente o la ley.</span></label>
+        <label class="legal-check"><input id="reportAccuracy" type="checkbox" required /><span>Confirmo que la información es exacta y que soy titular o estoy autorizado para actuar en su nombre.</span></label>
+        <label>Firma electrónica<input id="reportSignature" maxlength="160" required placeholder="Escribe tu nombre completo" /></label>
+        <button class="legal-button primary" type="submit">Enviar para revisión</button><p id="contentReportStatus" class="legal-status" role="status"></p>
+      </form>
+    </section>
+    <section id="apelacion" class="legal-section"><h2>Apelar una medida</h2><p>Debes haber iniciado sesión en QSession con la cuenta anfitriona de la sala.</p>
+      <form id="contentAppealForm" class="legal-form">
+        <label>Número del reporte<input id="appealReportId" maxlength="160" required placeholder="copyright_report_…" /></label>
+        <label>Explicación y fundamento<textarea id="appealExplanation" maxlength="3000" rows="6" required placeholder="Explica por qué la identificación o la medida debería revisarse…"></textarea></label>
+        <label>Enlace a licencia o evidencia, si existe<input id="appealEvidenceUrl" type="url" maxlength="800" placeholder="https://…" /></label>
+        <label class="legal-check"><input id="appealGoodFaith" type="checkbox" required /><span>Declaro de buena fe que esta apelación es veraz y no busca retrasar una medida válida.</span></label>
+        <label>Firma electrónica<input id="appealSignature" maxlength="160" required /></label>
+        <button class="legal-button" type="submit">Enviar apelación</button><p id="contentAppealStatus" class="legal-status" role="status"></p>
+      </form>
+    </section>
+  </article>
+  <footer class="legal-footer"><span>© 2026 Q Session</span><nav><a href="/propiedad-intelectual.html">Política</a><a href="/terminos-anfitriones.html">Términos</a><a href="/">Inicio</a></nav></footer>
+</main><script src="/reportar-contenido.js?v=20260929-rights-v1"></script></body></html>

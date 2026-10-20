@@ -1,0 +1,511 @@
+/* QSession shared visual identity: navy structure, clear blue actions, sky depth. */
+:root {
+  --qs-navy: #102f49;
+  --qs-navy-deep: #0b2741;
+  --qs-blue: #0b68a5;
+  --qs-blue-strong: #0b5f96;
+  --qs-sky: #1596c4;
+  --qs-sky-bright: #55c7e8;
+  --qs-sky-pale: #eaf7fc;
+  --qs-sky-soft: #f4faff;
+  --qs-line: #b8d3e0;
+  --qs-muted: #587184;
+  --navy: var(--qs-navy);
+  --navy-2: #174f75;
+  --ink: var(--qs-navy);
+  --blue-gray: #6f91a5;
+  --muted: var(--qs-muted);
+  --aqua: var(--qs-sky-bright);
+  --aqua-soft: var(--qs-sky-pale);
+  --teal: var(--qs-blue);
+  --mint: #82d9ef;
+  --cream: #f6f9fc;
+  --paper: #f6f9fc;
+  --line: var(--qs-line);
+  accent-color: var(--qs-sky);
+}
+
+html,
+body {
+  background-color: #f6f9fc;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 92% 4%, rgba(85, 199, 232, .18), transparent 28rem),
+    linear-gradient(145deg, #fbfdff, #f2f8fc);
+}
+
+:is(button, input, select, textarea, summary, a):focus-visible {
+  outline-color: rgba(21, 150, 196, .48);
+}
+
+/* Main app shell and common navigation. */
+.side-rail {
+  background: rgba(239, 248, 253, .9);
+  border-right-color: rgba(11, 104, 165, .12);
+}
+
+.topbar {
+  background: rgba(248, 252, 255, .84);
+  border-bottom-color: rgba(11, 104, 165, .1);
+}
+
+@media (max-width: 760px) {
+  .bottom-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+.rail-nav button,
+.bottom-nav button,
+.session-back-button,
+.install-app-button,
+.quick-live-rooms-menu > summary {
+  color: #315f7d;
+}
+
+.rail-nav button i,
+.install-app-button span,
+.quick-live-rooms-panel header small,
+.quick-live-room-topline span,
+.quick-live-room-meta b {
+  color: var(--qs-blue);
+}
+
+.rail-nav button.active {
+  background: linear-gradient(125deg, #0b68a5, #174f75);
+  box-shadow: 0 12px 30px rgba(11, 104, 165, .2);
+}
+
+.rail-promise,
+.quick-live-rooms-menu > summary:hover,
+.quick-live-rooms-menu[open] > summary,
+.quick-live-room:hover,
+.language-menu button:hover,
+.language-menu button[aria-selected="true"],
+.session-back-button:hover,
+.install-app-button:hover {
+  background: var(--qs-sky-pale);
+  border-color: rgba(21, 150, 196, .24);
+}
+
+.pulse-dot,
+.quick-live-room-topline span::before {
+  background: var(--qs-sky);
+  box-shadow: 0 0 0 .3rem rgba(21, 150, 196, .15);
+}
+
+.public-rooms-toggle:hover,
+.public-rooms-toggle[aria-expanded="true"],
+.public-room-card,
+.public-room-policy-notice {
+  background: rgba(234, 247, 252, .78);
+  border-color: rgba(11, 104, 165, .16);
+}
+
+.public-rooms-live-mark {
+  background: rgba(21, 150, 196, .09);
+}
+
+.public-rooms-live-mark::before,
+.public-rooms-live-mark::after {
+  border-color: rgba(21, 150, 196, .3);
+}
+
+.public-rooms-live-mark i {
+  background: var(--qs-sky);
+  box-shadow: 0 0 0 .24rem rgba(21, 150, 196, .14);
+}
+
+.public-room-summary strong {
+  color: var(--qs-blue-strong);
+  background: rgba(21, 150, 196, .1);
+}
+
+.public-rooms-refresh:hover {
+  background: #d9f1fb;
+}
+
+#quickLiveRoomCount,
+.language-menu button[aria-selected="true"] > span {
+  background: var(--qs-blue);
+}
+
+.language-control > summary {
+  color: #8ddff2;
+  background: var(--qs-navy);
+}
+
+.language-menu button > span {
+  color: var(--qs-blue);
+  background: var(--qs-sky-pale);
+}
+
+/* Creation, configuration and shared light cards. */
+.creator-card,
+.room-config-menu,
+.active-room-settings,
+.camera-effects-control,
+.conference-config-block,
+.room-promotion-editor,
+.scheduled-start-field,
+.custom-quote-panel {
+  border-color: rgba(11, 104, 165, .18);
+  background: linear-gradient(135deg, rgba(234, 247, 252, .9), rgba(255, 255, 255, .98));
+}
+
+.qsession-select-trigger,
+.room-visibility-choices span,
+.room-choice-row span,
+.room-setting-toggle,
+.schedule-date-time-grid label {
+  border-color: #c4dce8;
+  background: rgba(255, 255, 255, .96);
+}
+
+.qsession-select-trigger:hover,
+.room-visibility-choices label:hover span,
+.room-choice-row input:checked + span,
+.schedule-date-time-grid label:hover,
+.room-config-menu[open] {
+  border-color: rgba(11, 116, 181, .48);
+}
+
+.qsession-select-menu button:hover,
+.qsession-select-menu button:focus-visible,
+.qsession-select-menu button[aria-selected="true"],
+.room-password-field,
+.room-permission-heading,
+.room-config-state,
+.schedule-preview,
+.room-visibility-choices span > i,
+.room-type-feature-preview span.is-active {
+  color: #0b5f96;
+  background: var(--qs-sky-pale);
+}
+
+.qsession-select-menu button > i,
+.room-promotion-upload > span {
+  color: #fff;
+  background: var(--qs-blue);
+}
+
+.room-promotion-editor > header > i {
+  color: var(--qs-blue);
+  background: rgba(21, 150, 196, .12);
+}
+
+.room-promotions {
+  border-color: rgba(11, 104, 165, .2);
+  background: rgba(248, 252, 255, .97);
+}
+
+.room-setting-toggle input,
+.camera-effect-intensity input {
+  accent-color: var(--qs-sky);
+}
+
+.camera-effect-options button[aria-pressed="true"] {
+  border-color: var(--qs-sky);
+  box-shadow: inset 0 0 0 1px var(--qs-sky);
+}
+
+.custom-quote-open,
+#customQuoteCancel,
+#customQuoteCalculate {
+  background: var(--qs-sky-pale);
+}
+
+.custom-quote-result {
+  background: linear-gradient(155deg, var(--qs-navy), #0b68a5);
+}
+
+.custom-quote-result > small,
+.custom-quote-result li::before {
+  color: #73d4ec;
+}
+
+/* Music library, player and qDJ: remove the former moss/green deck. */
+#musicLibrary,
+#musicLibrary.set-desk,
+#musicExplorer {
+  --ink: var(--qs-navy);
+  --muted: var(--qs-muted);
+  --line: var(--qs-line);
+  --accent: var(--qs-blue);
+  --soft: var(--qs-sky-pale);
+}
+
+#musicLibrary,
+#musicLibrary.set-desk,
+#musicExplorer,
+.music-catalog,
+.music-playlists-view,
+.music-queue {
+  color: var(--qs-navy);
+  background-color: #fbfdff;
+  border-color: var(--qs-line);
+}
+
+.music-sidebar,
+.music-session-start,
+#musicStatus,
+#musicLibrary.set-desk > .music-autopilot {
+  background: #edf8fd;
+  border-color: #b8d3e0;
+}
+
+.music-families button[aria-pressed="true"],
+.music-view-tabs button[aria-selected="true"],
+.music-panel-tabs button[aria-selected="true"] {
+  color: var(--qs-navy);
+  border-color: var(--qs-blue);
+}
+
+.music-track:hover,
+.music-track.is-playing,
+#musicQueue > li.is-playing,
+#musicLibrary.set-desk #musicQueue > li.is-playing {
+  color: var(--qs-navy);
+  background: #e5f5fc;
+  border-color: var(--qs-blue);
+}
+
+.music-track-tags b,
+.music-track-tags i,
+.music-playlist-cover,
+.music-sfx-grid button,
+.music-reaction-grid button {
+  background-color: #edf6fb;
+}
+
+.music-playlist-cover {
+  color: #315f7d;
+}
+
+.music-player,
+#musicLibrary.set-desk .music-player {
+  color: var(--qs-navy);
+  background: linear-gradient(140deg, #e6f5fb, #f8fcff 64%, #eef8fd);
+  border-color: #9bc8db;
+}
+
+.music-now-art,
+#musicLibrary.set-desk .music-now-art {
+  color: #fff;
+  background: #0c5688;
+}
+
+.music-now strong,
+.music-credit strong,
+.music-credit > a,
+.music-queue-title,
+.music-performance-panel > summary {
+  color: var(--qs-navy);
+}
+
+.music-now small,
+.music-now > span,
+.music-credit small,
+.music-credit-links a,
+.music-progress,
+.music-volume output,
+.music-bpm-control output small {
+  color: var(--qs-muted);
+}
+
+.music-transport button,
+.music-bpm-control,
+.music-transition-control,
+.music-bpm-control button,
+.music-transition-control select {
+  color: var(--qs-navy);
+  border-color: #91bed3;
+  background-color: #fff;
+}
+
+.music-transport #musicPlay,
+.music-transport #musicPause,
+#musicLibrary.set-desk .music-transport #musicPlay,
+#musicLibrary.set-desk .music-transport #musicPause,
+.music-transition-control button,
+#musicLibrary.set-desk .music-transition-control button,
+#musicCreateSet,
+#musicGenerate,
+#musicPendingMix {
+  color: #fff;
+  border-color: var(--qs-blue);
+  background: linear-gradient(135deg, var(--qs-blue), #0d8fb9);
+}
+
+.music-progress input,
+.music-volume input {
+  accent-color: var(--qs-sky);
+}
+
+.music-pending-set {
+  color: var(--qs-navy);
+  border-color: var(--qs-blue);
+  background: #edf8fd;
+}
+
+/* Host transmission controls share the same luminous sky system. */
+.media-console[data-media-role="dj"],
+.media-console[data-media-role="dj"] .media-controls,
+.media-console[data-media-role="dj"] #djControls {
+  color: var(--qs-navy);
+  background: #f6fbff;
+}
+
+.media-controls .host-audio-setup > summary,
+.media-controls .voice-overlay-control,
+.media-controls .voice-overlay-heading,
+.media-controls .active-room-settings,
+.media-console[data-media-role="dj"] #djControls .music-library-open,
+.media-console[data-media-role="dj"] #voiceOverlayState {
+  color: var(--qs-navy);
+  background: var(--qs-sky-pale);
+  border-color: var(--qs-line);
+}
+
+.media-console[data-media-role="dj"] #djControls .media-icon-action[data-control-state="active"] {
+  color: var(--qs-navy);
+  background: #dff4fc;
+  border-color: var(--qs-blue);
+}
+
+.media-console[data-media-role="dj"] #djControls .media-action-icon,
+.media-console[data-media-role="dj"] .audio-meter span,
+.media-console[data-media-role="dj"] .disclosure-chevron {
+  color: var(--qs-blue);
+}
+
+.media-console[data-media-role="dj"] .audio-meter i b {
+  background: var(--qs-sky);
+}
+
+#roomResult .room-share-open {
+  background: #dff4fc !important;
+}
+
+#roomResult .room-share-trigger-icon {
+  background: var(--qs-blue) !important;
+}
+
+/* Administration and legal surfaces. */
+.admin-brandbar,
+.legal-card,
+.panel,
+.login-card {
+  border-color: var(--qs-line);
+  background: rgba(255, 255, 255, .92);
+}
+
+.edge-status-panel,
+.surface-card,
+.billing-admin,
+.music-admin-launch,
+.network-item,
+.product-item {
+  border-color: #b8d8e7;
+  background: linear-gradient(135deg, #edf8fd, #fff);
+}
+
+.edge-status-panel > strong,
+.billing-order-row > span[data-status="approved"],
+.content-report-heading span[data-status="dismissed"],
+.content-report-heading span[data-status="restored"] {
+  color: #0b5f96;
+  background: #dff4fc;
+}
+
+.daily-column i,
+.ranking-row i::after,
+.login-card button,
+.dashboard-actions button,
+.billing-admin-heading button,
+.billing-plan-form button,
+.admin-credit-form button,
+.legal-button.primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--qs-blue), #0d8fb9);
+}
+
+.legal-meta span,
+.legal-note,
+.legal-form .legal-check {
+  background: var(--qs-sky-pale);
+  border-color: var(--qs-line);
+}
+
+.legal-section {
+  border-color: #c9dfeb;
+}
+
+/* Chrome capture and camera laboratory use blue/celeste instead of turquoise. */
+.capture-card {
+  border-color: rgba(85, 199, 232, .25);
+  background: linear-gradient(145deg, rgba(8, 42, 73, .96), rgba(12, 82, 126, .94));
+}
+
+.capture-card::before,
+.capture-card::after,
+.signal-orbit i,
+.steps article,
+.signal-stage,
+.controls button {
+  border-color: rgba(85, 199, 232, .28);
+}
+
+.primary,
+.channel > i span,
+.equalizer i {
+  background: linear-gradient(90deg, #55c7e8, #1596c4);
+}
+
+.live-head p i {
+  background-color: #55c7e8;
+}
+
+.status[data-state="live"] {
+  color: #86dcf2;
+}
+
+body:has(.lab-layout) {
+  background: radial-gradient(circle at 15% 10%, #123f65 0, transparent 32rem), linear-gradient(145deg, #061722, #0a2842 65%, #0b3653);
+}
+
+.stage-card,
+.effects-card {
+  background: rgba(7, 35, 57, .86);
+}
+
+.stage-actions button,
+.control-heading button,
+.category-tabs button,
+.custom-mask-studio button.secondary,
+.mask-calibration header button {
+  background: #103b5b;
+}
+
+.category-tabs button[aria-pressed="true"],
+.custom-mask-studio,
+.mask-calibration,
+.lab-note {
+  border-color: rgba(85, 199, 232, .28);
+  background: rgba(21, 150, 196, .1);
+}
+
+.effect-option {
+  background: #0d3552;
+}
+
+.effect-option i {
+  color: #b9ecf8;
+  background: linear-gradient(145deg, #145e84, #173a62);
+  box-shadow: inset 0 0 18px rgba(85, 199, 232, .2);
+}
+
+@media (prefers-contrast: more) {
+  :root { --qs-line: #759fb5; }
+  :is(button, input, select, textarea, summary):focus-visible { outline-width: 4px; }
+}

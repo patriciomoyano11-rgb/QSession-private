@@ -1,0 +1,12 @@
+name = "qsession-live"
+main = "hls-worker.js"
+compatibility_date = "2026-09-23"
+
+[[r2_buckets]]
+binding = "QSESSION_LIVE"
+bucket_name = "qsession-live"
+preview_bucket_name = "qsession-live-preview"
+
+# Conecta live.qsession.org como Custom Domain desde Cloudflare Workers.
+# El bucket debe tener una regla de ciclo de vida que elimine live/ tras 24 horas.
+# No expongas r2.dev: toda lectura debe pasar por este Worker y su caché.

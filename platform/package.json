@@ -1,0 +1,38 @@
+{
+  "name": "qsession-platform",
+  "version": "0.1.4",
+  "private": true,
+  "description": "Núcleo unificado de Q Session para web, Android y Windows",
+  "main": "server.js",
+  "scripts": {
+    "build:world-map": "node scripts/build-world-map.mjs",
+    "migrate": "node scripts/migrate.js",
+    "start": "node server.js",
+    "start:production": "node scripts/migrate.js && node server.js",
+    "test": "node --test test/*.test.js",
+    "broadcast:preflight": "node scripts/check-mass-broadcast.cjs",
+    "test:realtime-load": "node scripts/load-realtime.js",
+    "music:discover": "node scripts/discover-underground.cjs",
+    "music:expand": "node scripts/expand-audius-underground.cjs",
+    "music:verify": "node scripts/verify-audius-selection.cjs",
+    "test:music": "node --test test/music-library.test.js",
+    "test:broadcast-admissions": "node scripts/load-broadcast-admissions.cjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.0.1",
+    "hls.js": "1.7.3",
+    "livekit-server-sdk": "2.18.0",
+    "pg": "8.16.3",
+    "redis": "5.8.2",
+    "ws": "8.18.3"
+  },
+  "devDependencies": {
+    "d3-geo": "^3.1.1",
+    "topojson-client": "^3.1.0",
+    "world-atlas": "^2.0.2",
+    "world-countries": "^5.1.0"
+  }
+}

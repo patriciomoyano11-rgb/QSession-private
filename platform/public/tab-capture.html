@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="theme-color" content="#071b33" />
+  <title>Q Session · Audio de Chrome</title>
+  <link rel="icon" href="/brand/qsession-icon-master.png?v=20260911-brand-logo-v1" />
+  <link rel="stylesheet" href="/tab-capture.css?v=1" />
+  <link rel="stylesheet" href="/qsession-sky-palette.css?v=20261016-sky-palette-v1" />
+</head>
+<body>
+  <main class="capture-shell">
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="Q Session">
+        <img src="/brand/qsession-icon-master.png?v=20260911-brand-logo-v1" alt="" />
+        <span><strong>Q SESSION</strong><small>CAPTURA DE CHROME</small></span>
+      </a>
+      <span id="roomBadge" class="room-badge">CHROME</span>
+    </header>
+
+    <section class="capture-card" aria-labelledby="captureTitle">
+      <div id="captureIntro" class="capture-intro">
+        <div class="signal-orbit" aria-hidden="true">
+          <i></i><i></i><i></i>
+          <img src="/brand/qsession-icon-master.png?v=20260911-brand-logo-v1" alt="" />
+        </div>
+        <p class="eyebrow">AUDIO AISLADO · CHROME</p>
+        <h1 id="captureTitle">Comparte el sonido de una pestaña.</h1>
+        <p class="lead">Q Session recibirá solamente el audio que confirmes. Tus notificaciones y las demás aplicaciones quedarán fuera.</p>
+
+        <div class="steps">
+          <article><b>01</b><span>Pulsa el botón inferior.</span></article>
+          <article><b>02</b><span>Elige “Pestaña de Chrome”.</span></article>
+          <article><b>03</b><span>Activa “Compartir audio de la pestaña”.</span></article>
+        </div>
+        <button id="startCapture" class="primary" type="button">Elegir pestaña y transmitir audio <span>→</span></button>
+      </div>
+
+      <section id="liveConsole" class="live-console" aria-labelledby="liveTitle" hidden>
+        <header class="live-head">
+          <div>
+            <p><i></i> TRANSMISIÓN ACTIVA</p>
+            <h2 id="liveTitle">Audio de la pestaña</h2>
+          </div>
+          <div class="clock"><small>EN VIVO</small><strong id="liveElapsed">00:00</strong></div>
+        </header>
+
+        <div class="signal-stage">
+          <div id="equalizer" class="equalizer" aria-label="Actividad del audio"></div>
+          <div class="meter-panel">
+            <header><span>NIVEL DE SEÑAL</span><strong id="signalQuality">ESPERANDO AUDIO</strong></header>
+            <div class="channel"><b>L</b><i><span id="leftLevel"></span></i><output id="leftDb">−∞ dB</output></div>
+            <div class="channel"><b>R</b><i><span id="rightLevel"></span></i><output id="rightDb">−∞ dB</output></div>
+            <p>Estéreo · 48 kHz · sin micrófono ni sonidos del sistema</p>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button id="pauseCapture" type="button"><span>Ⅱ</span><b id="pauseLabel">Pausar</b></button>
+          <button id="changeCapture" type="button"><span>↗</span><b>Cambiar pestaña</b></button>
+          <button id="stopCapture" class="danger" type="button"><span>■</span><b>Detener</b></button>
+        </div>
+      </section>
+
+      <p id="captureStatus" class="status" role="status">La transmisión comenzará únicamente cuando confirmes una pestaña.</p>
+    </section>
+  </main>
+  <script src="/vendor/livekit-client.umd.js"></script>
+  <script src="/tab-capture.js?v=6-realtime-bitrate"></script>
+</body>
+</html>

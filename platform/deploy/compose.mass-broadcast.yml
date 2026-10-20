@@ -1,0 +1,6 @@
+# Overlay dormant: mounts operator evidence but does not enable cdn-only mode.
+# Use only during a future explicitly approved deployment.
+services:
+  qsession-app:
+    volumes:
+      - ./private/mass-broadcast-readiness.json:/run/qsession/mass-broadcast-readiness.json:ro

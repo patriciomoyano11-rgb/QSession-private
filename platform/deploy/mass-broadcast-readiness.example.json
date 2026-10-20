@@ -1,0 +1,102 @@
+{
+  "schemaVersion": 1,
+  "roomCode": "",
+  "targetViewers": 500000,
+  "approvedBy": "",
+  "approvedAt": null,
+  "expiresAt": null,
+  "providerConcurrentViewers": 0,
+  "loadTestConcurrentViewers": 0,
+  "joinWindowSeconds": 300,
+  "loadTestJoinsPerSecond": 0,
+  "profile": {
+    "width": 1280,
+    "height": 720,
+    "framerate": 30,
+    "videoBitrate": 1800000,
+    "audioBitrate": 320000,
+    "segmentSeconds": 6
+  },
+  "checks": {
+    "cdnCapacity": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "budget": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "originShieldAndCache": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "accessAndPrivacy": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "distributedAdmissions": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "loadAndReconnect": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "encoderFailover": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "windowsAudioVideo": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "androidAudioVideoAndLock": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "webAudioVideo": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "costAndPlaybackAlerts": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "rollbackRehearsal": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "privateChatAndGroups": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "privateMediaAccess": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "privateVoiceIsolation": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    },
+    "privateChatLoad": {
+      "status": "pending",
+      "reference": "",
+      "verifiedAt": null
+    }
+  }
+}

@@ -1,0 +1,46 @@
+<Window x:Class="QSession.Host.WebShellWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Q Session Desktop"
+        Icon="/QSession.Host;component/Assets/qsession.ico"
+        Width="1440" Height="900" MinWidth="1060" MinHeight="700"
+        WindowStartupLocation="CenterScreen"
+        WindowState="Maximized"
+        Background="#F7F4ED"
+        Loaded="WebShellWindow_Loaded"
+        Closing="WebShellWindow_Closing">
+    <Grid>
+        <wv2:WebView2 x:Name="WebApp"
+                      NavigationStarting="WebApp_NavigationStarting"
+                      NavigationCompleted="WebApp_NavigationCompleted" />
+
+        <Border x:Name="LoadingPanel" Background="#F7F4ED">
+            <Grid>
+                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                    <Border Width="86" Height="86" HorizontalAlignment="Center" Background="#102746" CornerRadius="27">
+                        <Image Source="/QSession.Host;component/Assets/qsession.png" Width="70" Height="70" Stretch="Uniform" />
+                    </Border>
+                    <TextBlock Margin="0,22,0,0" Text="Q SESSION" HorizontalAlignment="Center" FontSize="26" FontWeight="SemiBold" />
+                    <TextBlock Margin="0,6,0,0" Text="Conectando con tu plataforma…" HorizontalAlignment="Center" Foreground="#607D8E" FontSize="13" />
+                    <ProgressBar Width="220" Height="5" Margin="0,21,0,0" IsIndeterminate="True" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border x:Name="OfflinePanel" Margin="28" Padding="32" HorizontalAlignment="Center" VerticalAlignment="Center"
+                Background="#FFFEFB" BorderBrush="#D2E1E1" BorderThickness="1" CornerRadius="28"
+                Visibility="Collapsed" Effect="{StaticResource StrongShadow}">
+            <StackPanel Width="390">
+                <Border Width="66" Height="66" HorizontalAlignment="Left" Background="#E5F4F2" CornerRadius="21">
+                    <TextBlock Text="◎" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#287D84" FontSize="28" />
+                </Border>
+                <TextBlock Margin="0,20,0,0" Text="Q Session no pudo conectarse" FontSize="25" FontWeight="SemiBold" />
+                <TextBlock x:Name="OfflineDetail" Margin="0,9,0,0" Text="Comprueba tu conexión a Internet y vuelve a intentarlo."
+                           TextWrapping="Wrap" Foreground="#607D8E" FontSize="13" LineHeight="20" />
+                <Button Margin="0,22,0,0" Content="Volver a intentar" Style="{StaticResource PrimaryButton}" Click="RetryWeb_Click" />
+                <Button Margin="0,9,0,0" Content="Abrir transmisión nativa" Style="{StaticResource SecondaryButton}" Click="OpenNativeStudio_Click" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

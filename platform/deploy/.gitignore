@@ -1,0 +1,7 @@
+qsession.env
+qsession.previous.env
+livekit.yaml
+egress.yaml
+caddy.yaml
+caddy_data/
+backups/

@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#102746" />
+    <meta name="robots" content="noindex, nofollow, noarchive" />
+    <link rel="icon" href="/icons/qsession-icon-192.png?v=20260911-brand-logo-v1" type="image/png" />
+    <link rel="stylesheet" href="/admin.css?v=20261016-admin-sections-v3" />
+    <link rel="stylesheet" href="/music-library.css?v=20261008-live-dj-v1" />
+    <link rel="stylesheet" href="/qsession-sky-palette.css?v=20261016-sky-palette-v1" />
+    <title>Administración · Q Session</title>
+  </head>
+  <body>
+    <main class="admin-shell">
+      <header class="admin-brandbar">
+        <a href="/" class="admin-brand" aria-label="Volver a Q Session">
+          <img src="/brand/qsession-icon-master.png?v=20260911-brand-logo-v1" alt="" />
+          <span><strong>Q Session</strong><small>ADMINISTRACIÓN</small></span>
+        </a>
+        <span class="private-badge">Acceso privado</span>
+      </header>
+
+      <section id="adminLogin" class="login-stage" aria-labelledby="adminLoginTitle">
+        <form id="adminLoginForm" class="login-card">
+          <span class="eyebrow">DATOS Y OPERACIÓN</span>
+          <h1 id="adminLoginTitle">Panel administrativo</h1>
+          <p>Información general de la web y las aplicaciones de Q Session.</p>
+          <label for="adminUsername">Usuario</label>
+          <input id="adminUsername" name="username" autocomplete="username" required />
+          <label for="adminPassword">Contraseña</label>
+          <input id="adminPassword" name="password" type="password" autocomplete="current-password" required />
+          <button type="submit">Ingresar</button>
+          <button id="adminRecoveryOpen" class="text-button" type="button">¿Olvidaste tu contraseña?</button>
+          <p id="adminLoginStatus" class="status" role="status" aria-live="polite"></p>
+        </form>
+
+        <form id="adminRecoveryForm" class="login-card recovery-card" hidden>
+          <span class="eyebrow">RECUPERAR ACCESO</span>
+          <h1>Crear una nueva contraseña</h1>
+          <p>Usa el código personal de recuperación que recibiste al configurar el panel.</p>
+          <label for="adminRecoveryUsername">Usuario</label>
+          <input id="adminRecoveryUsername" name="username" autocomplete="username" required />
+          <label for="adminRecoveryCode">Código de recuperación</label>
+          <input id="adminRecoveryCode" name="recoveryCode" type="password" autocomplete="one-time-code" required />
+          <label for="adminRecoveryPassword">Nueva contraseña</label>
+          <input id="adminRecoveryPassword" name="newPassword" type="password" autocomplete="new-password" minlength="10" required />
+          <label for="adminRecoveryConfirm">Repite la nueva contraseña</label>
+          <input id="adminRecoveryConfirm" name="confirmPassword" type="password" autocomplete="new-password" minlength="10" required />
+          <button type="submit">Actualizar contraseña</button>
+          <button id="adminRecoveryCancel" class="quiet-button" type="button">Volver al ingreso</button>
+          <p id="adminRecoveryStatus" class="status" role="status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section id="adminDashboard" class="dashboard" hidden>
+        <header class="dashboard-heading">
+          <div>
+            <span class="eyebrow">VISIÓN GENERAL</span>
+            <h1>Actividad de Q Session</h1>
+            <p id="adminGeneratedAt">Preparando métricas…</p>
+          </div>
+          <div class="dashboard-actions">
+            <label for="adminPeriod">Periodo</label>
+            <select id="adminPeriod">
+              <option value="7">7 días</option>
+              <option value="30" selected>30 días</option>
+              <option value="90">90 días</option>
+              <option value="180">180 días</option>
+            </select>
+            <button id="adminRefresh" type="button">Actualizar</button>
+            <button id="adminLogout" class="quiet" type="button">Salir</button>
+          </div>
+        </header>
+
+        <p id="adminStatus" class="status dashboard-status" role="status" aria-live="polite"></p>
+
+        <nav class="admin-section-nav" aria-label="Secciones de administración">
+          <button type="button" data-admin-section-target="adminOverviewSection"><span aria-hidden="true">⌁</span> Resumen</button>
+          <button type="button" data-admin-section-target="adminMusicSection"><span aria-hidden="true">♫</span> Música</button>
+          <button type="button" data-admin-section-target="adminCommunitySection"><span aria-hidden="true">◉</span> Usuarios y salas</button>
+          <button type="button" data-admin-section-target="adminModerationSection"><span aria-hidden="true">◇</span> Derechos</button>
+          <button type="button" data-admin-section-target="adminBillingSection"><span aria-hidden="true">$</span> Pagos y planes</button>
+          <button type="button" data-admin-section-target="adminStarsSection"><span aria-hidden="true">✦</span> Estrellas</button>
+          <button type="button" data-admin-section-target="adminAnalyticsSection"><span aria-hidden="true">↗</span> Analítica</button>
+        </nav>
+
+        <div class="admin-sections">
+          <details id="adminOverviewSection" class="admin-section" open>
+            <summary><span class="admin-section-icon" aria-hidden="true">⌁</span><span><small>ESTADO GENERAL</small><strong>Resumen operativo</strong><em>Actividad, audiencia y distribución de la señal.</em></span><i aria-hidden="true"></i></summary>
+            <div class="admin-section-body">
+              <div id="overviewCards" class="metric-grid" aria-label="Métricas principales"></div>
+              <section id="edgeStatusPanel" class="edge-status-panel" aria-labelledby="edgeStatusTitle">
+                <div><span class="eyebrow">TRANSMISIÓN ECONÓMICA</span><h2 id="edgeStatusTitle">Estado de distribución</h2><p id="edgeStatusCopy">Comprobando la ruta audiovisual…</p></div>
+                <strong id="edgeStatusBadge">Comprobando</strong>
+              </section>
+            </div>
+          </details>
+
+          <details id="adminMusicSection" class="admin-section admin-music-section">
+            <summary><span class="admin-section-icon" aria-hidden="true">♫</span><span><small>CATÁLOGO PROPIO</small><strong id="musicAdminTitle">Biblioteca musical</strong><em>Agrega, ordena, clasifica y retira canciones.</em></span><i aria-hidden="true"></i></summary>
+            <div class="admin-section-body music-manager">
+              <header class="music-manager-heading">
+                <div><h2>Tu catálogo de QSession</h2><p>Organizado por género y subgénero. Las clasificaciones revisadas alimentan las selecciones del qDJ.</p></div>
+                <div class="music-manager-actions">
+                  <button type="button" class="quiet" data-open-music><span aria-hidden="true">▦</span> Abrir biblioteca completa</button>
+                  <button type="button" data-open-music data-import-music><span aria-hidden="true">＋</span> Agregar música</button>
+                </div>
+              </header>
+              <div class="music-manager-stats" aria-label="Resumen del catálogo">
+                <div><strong id="adminMusicTrackCount">0</strong><span>Canciones</span></div>
+                <div><strong id="adminMusicGenreCount">0</strong><span>Géneros</span></div>
+                <div><strong id="adminMusicPendingCount">0</strong><span>Por revisar</span></div>
+              </div>
+              <div class="music-manager-toolbar">
+                <label class="music-manager-search"><span aria-hidden="true">⌕</span><input id="adminMusicSearch" type="search" placeholder="Buscar canción, autor o subgénero" aria-label="Buscar en la biblioteca" /></label>
+                <label><span>Género</span><select id="adminMusicGenre"><option value="">Todos los géneros</option></select></label>
+                <label><span>Subgénero</span><select id="adminMusicSubgenre"><option value="">Todos los subgéneros</option></select></label>
+                <label><span>Orden</span><select id="adminMusicSort"><option value="genre">Género y nombre</option><option value="recent">Más recientes</option><option value="title">Nombre A–Z</option><option value="bpm">BPM</option></select></label>
+              </div>
+              <p id="adminMusicStatus" class="status" role="status" aria-live="polite"></p>
+              <div id="adminMusicGroups" class="music-genre-groups"></div>
+            </div>
+          </details>
+
+          <details id="adminCommunitySection" class="admin-section">
+            <summary><span class="admin-section-icon" aria-hidden="true">◉</span><span><small>COMUNIDAD</small><strong>Usuarios y salas</strong><em>Cuentas, perfiles, sesiones, audiencia e interacciones.</em></span><i aria-hidden="true"></i></summary>
+            <div class="admin-section-body">
+              <section class="panel product-panel" aria-labelledby="adminCommunityTitle">
+                <header><div><span class="eyebrow">PLATAFORMA</span><h2 id="adminCommunityTitle">Comunidad y sesiones</h2><p class="panel-intro">Consulta el movimiento de las cuentas y de las salas durante el periodo seleccionado.</p></div></header>
+                <div id="productMetrics" class="product-grid"></div>
+              </section>
+            </div>
+          </details>
+
+          <details id="adminModerationSection" class="admin-section">
+            <summary><span class="admin-section-icon" aria-hidden="true">◇</span><span><small>DERECHOS Y SEGURIDAD</small><strong>Reportes de contenido</strong><em>Revisión de evidencia, decisiones y apelaciones.</em></span><i aria-hidden="true"></i></summary>
+            <div class="admin-section-body"><section class="panel moderation-panel" aria-labelledby="moderationTitle"><header><div><h2 id="moderationTitle">Reportes de contenido</h2><p class="panel-intro">Revisa la evidencia antes de suspender. Tres decisiones confirmadas activas suspenden la cuenta anfitriona.</p></div></header><div id="contentReportList" class="content-report-list"></div></section></div>
+          </details>
+
+          <details id="adminBillingSection" class="admin-section">
+            <summary><span class="admin-section-icon" aria-hidden="true">$</span><span><small>COMERCIAL</small><strong>Pagos, planes y bonos</strong><em>Precios, capacidad, movimientos y créditos de cortesía.</em></span><i aria-hidden="true"></i></summary>
+            <div class="admin-section-body"><section class="billing-admin" aria-labelledby="billingAdminTitle">
+          <header class="billing-admin-heading">
+            <div><span class="eyebrow">PAGOS Y PLANES</span><h2 id="billingAdminTitle">Venta de salas</h2><p id="billingConfiguration">Comprobando la conexión de pagos…</p></div>
+            <button id="adminBillingRefresh" type="button">Actualizar cobros</button>
+          </header>
+          <div id="billingCards" class="billing-metric-grid"></div>
+          <div class="billing-admin-grid">
+            <article class="panel billing-plans-panel">
+              <header><div><span class="eyebrow">CATÁLOGO</span><h2>Precios y capacidad</h2></div></header>
+              <p class="panel-intro">Los cambios se aplican a compras nuevas. Las órdenes ya creadas conservan el precio original.</p>
+              <div id="billingPlanList" class="billing-plan-list"></div>
+            </article>
+            <article class="panel billing-credit-panel">
+              <header><div><span class="eyebrow">AJUSTE AUDITADO</span><h2>Entregar un bono</h2></div></header>
+              <form id="adminCreditForm" class="admin-credit-form">
+                <label>Correo o ID de cuenta<input id="creditAccount" required autocomplete="off" /></label>
+                <label>Plan<select id="creditPlan" required></select></label>
+                <label>Cantidad<input id="creditUnits" type="number" min="1" max="100" value="1" required /></label>
+                <label>Motivo<input id="creditReason" maxlength="300" required placeholder="Cortesía, compensación…" /></label>
+                <button type="submit">Entregar bono</button>
+                <p id="creditStatus" class="status" role="status"></p>
+              </form>
+            </article>
+            <article class="panel billing-orders-panel">
+              <header><div><span class="eyebrow">MOVIMIENTOS</span><h2>Pagos recientes</h2></div></header>
+              <div id="billingOrderList" class="billing-order-list"></div>
+            </article>
+          </div>
+            </section></div>
+          </details>
+
+          <details id="adminStarsSection" class="admin-section">
+            <summary><span class="admin-section-icon" aria-hidden="true">✦</span><span><small>ARTISTAS Y COMUNIDAD</small><strong>Estrellas y beneficios</strong><em>Valor, participación, recompensas y actividad de estrellas.</em></span><i aria-hidden="true"></i></summary>
+            <div class="admin-section-body">
+              <article class="panel star-admin-panel">
+                <header><div><span class="eyebrow">ESTRELLAS</span><h2>Economía de artistas</h2><p class="panel-intro">Configura cada componente de manera independiente y revisa sus métricas antes de guardar.</p></div></header>
+                <form id="starSettingsForm" class="admin-credit-form">
+                  <label>Valor de 1 estrella (COP)<input id="starCopValue" type="number" min="1" max="100000" required /></label>
+                  <label>Participación del artista (%)<input id="starArtistShare" type="number" min="0" max="100" required /></label>
+                  <label>Recompensa por sponsor<input id="starSponsorReward" type="number" min="0" max="10000" required /></label>
+                  <label>Límite diario por usuario<input id="starSponsorDailyLimit" type="number" min="0" max="1000" required /></label>
+                  <label>Tiempo mínimo del anuncio (segundos)<input id="starSponsorSeconds" type="number" min="5" max="3600" required /></label>
+                  <button type="submit">Guardar economía</button>
+                  <p id="starSettingsStatus" class="status" role="status"></p>
+                </form>
+                <div id="starAdminMetrics" class="billing-metric-grid"></div>
+              </article>
+            </div>
+          </details>
+
+          <details id="adminAnalyticsSection" class="admin-section">
+            <summary><span class="admin-section-icon" aria-hidden="true">↗</span><span><small>USO Y CALIDAD</small><strong>Analítica técnica</strong><em>Web, aplicaciones, conexión, funciones y versiones.</em></span><i aria-hidden="true"></i></summary>
+            <div class="admin-section-body"><div class="dashboard-grid">
+          <article class="panel surfaces-panel">
+            <header><div><span class="eyebrow">PLATAFORMAS</span><h2>Web y aplicaciones</h2></div></header>
+            <div id="surfaceCards" class="surface-grid"></div>
+          </article>
+
+          <article class="panel network-panel">
+            <header><div><span class="eyebrow">INTERNET</span><h2>Calidad de conexión</h2></div></header>
+            <div id="networkMetrics" class="network-grid"></div>
+          </article>
+
+          <article class="panel daily-panel">
+            <header><div><span class="eyebrow">TENDENCIA</span><h2>Actividad diaria</h2></div></header>
+            <div id="dailyChart" class="daily-chart" aria-label="Gráfico de actividad diaria"></div>
+          </article>
+
+          <article class="panel">
+            <header><div><span class="eyebrow">FUNCIONES</span><h2>Más utilizadas</h2></div></header>
+            <div id="featureList" class="ranking-list"></div>
+          </article>
+
+          <article class="panel">
+            <header><div><span class="eyebrow">VERSIONES</span><h2>Actividad por versión</h2></div></header>
+            <div id="versionList" class="ranking-list"></div>
+          </article>
+
+            </div></div>
+          </details>
+        </div>
+      </section>
+      <dialog id="adminMusicEditor" class="admin-music-dialog" aria-labelledby="adminMusicEditorTitle">
+        <form id="adminMusicEditorForm" method="dialog">
+          <header><div><span class="eyebrow">CLASIFICACIÓN MUSICAL</span><h2 id="adminMusicEditorTitle">Editar canción</h2></div><button type="button" data-close-admin-music aria-label="Cerrar">×</button></header>
+          <input id="adminMusicEditId" type="hidden" />
+          <div class="admin-music-form-grid">
+            <label>Título<input id="adminMusicEditTitle" maxlength="120" required /></label>
+            <label>Autor<input id="adminMusicEditArtist" maxlength="100" required /></label>
+            <label>Familia<select id="adminMusicEditFamily"><option value="electronic">Electrónica</option><option value="latin">Latina</option><option value="afro">Afro y global</option><option value="urban">Urbana</option><option value="pop">Pop y celebración</option><option value="ambient">Chill y ambiental</option><option value="wellness">Bienestar</option><option value="instrumental">Instrumental</option><option value="rock">Rock y metal</option></select></label>
+            <label>Género<input id="adminMusicEditGenre" maxlength="60" required /></label>
+            <label>Subgénero<input id="adminMusicEditSubgenre" maxlength="80" required /></label>
+            <label>BPM<input id="adminMusicEditBpm" type="number" min="40" max="220" required /></label>
+            <label>Energía<select id="adminMusicEditEnergy"><option value="1">1 · Suave</option><option value="2">2 · Baja</option><option value="3">3 · Media</option><option value="4">4 · Alta</option><option value="5">5 · Intensa</option></select></label>
+            <label>Emoción<input id="adminMusicEditMood" maxlength="24" /></label>
+            <label>Ritmo<input id="adminMusicEditRhythm" maxlength="24" /></label>
+          </div>
+          <p class="admin-music-form-note">Confirma la clasificación escuchando la canción cuando sea posible. El qDJ usará estos datos para mantener sets coherentes.</p>
+          <footer><button type="button" class="quiet" data-close-admin-music>Cancelar</button><button type="submit">Guardar clasificación</button></footer>
+          <p id="adminMusicEditStatus" class="status" role="status"></p>
+        </form>
+      </dialog>
+      <dialog id="adminMusicDeleteDialog" class="admin-music-dialog admin-delete-dialog" aria-labelledby="adminMusicDeleteTitle">
+        <form method="dialog"><span class="admin-delete-symbol" aria-hidden="true">−</span><h2 id="adminMusicDeleteTitle">Retirar canción</h2><p id="adminMusicDeleteCopy"></p><small>Dejará de aparecer en la biblioteca y no podrá reproducirse. El archivo quedará en una papelera interna para una recuperación técnica.</small><footer><button type="button" class="quiet" id="adminMusicDeleteCancel">Conservar</button><button type="button" class="danger" id="adminMusicDeleteConfirm">Retirar de QSession</button></footer><p id="adminMusicDeleteStatus" class="status" role="status"></p></form>
+      </dialog>
+      <div id="musicLibrarySlot" class="music-library-slot" hidden></div>
+    </main>
+    <script src="/dj-mixer.js?v=20261016-autodj-calibration-v2"></script>
+    <script src="/qdj-request.js?v=20261010-semantic-intent-v1"></script>
+    <script src="/music-library.js?v=20261016-autodj-calibration-v2"></script>
+    <script src="/admin.js?v=20261016-admin-sections-v3"></script>
+  </body>
+</html>

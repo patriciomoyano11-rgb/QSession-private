@@ -1,0 +1,65 @@
+# Dependencies and generated tools
+**/node_modules/
+**/.gradle/
+**/.gradle-user-home/
+**/.tools/
+**/.deps/
+**/.nuget/
+**/.dotnet-cli/
+**/.pnpm-store/
+**/__pycache__/
+**/tmp/
+**/test-output/
+release/
+output/
+
+# Build products
+**/build/
+**/dist/
+**/.cxx/
+**/bin/
+**/obj/
+*.apk
+*.aab
+*.exe
+*.dll
+*.zip
+*.tar.gz
+*.log
+
+# Secrets and signing material
+private/
+**/.env.local
+**/.env
+**/.env.*
+!**/.env.example
+!**/*.env.example
+**/signing.properties
+**/*.jks
+**/*.keystore
+**/*.p12
+**/*.pem
+**/*.key
+**/google-services.json
+**/GoogleService-Info.plist
+**/*service-account*.json
+**/serviceAccount*.json
+platform/deploy/qsession.env
+platform/deploy/qsession.previous.env
+platform/deploy/livekit.yaml
+platform/deploy/egress.yaml
+platform/deploy/caddy.yaml
+
+# Runtime data and generated downloads
+platform/data/*
+!platform/data/.gitkeep
+platform/public/downloads/*
+!platform/public/downloads/.gitkeep
+
+# Editors and operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp

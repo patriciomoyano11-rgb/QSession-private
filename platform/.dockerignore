@@ -1,0 +1,12 @@
+/data
+test
+node_modules
+analysis/node_modules
+analysis/.pnpm-store
+analysis/models
+npm-debug.log
+*.tmp
+public/downloads/*
+!public/downloads/.gitkeep
+!public/downloads/QSession-Android-0.1.42.apk
+!public/downloads/Instalar-QSession-Windows.exe

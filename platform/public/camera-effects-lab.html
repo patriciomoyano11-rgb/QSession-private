@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#071c2b" />
+  <title>QSession · Laboratorio de cámara</title>
+  <link rel="stylesheet" href="/camera-effects-lab.css?v=3" />
+  <link rel="stylesheet" href="/qsession-sky-palette.css?v=20261016-sky-palette-v1" />
+</head>
+<body>
+  <main>
+    <header class="lab-header">
+      <a href="/" aria-label="Volver a QSession">← QSession</a>
+      <div><p>PRUEBA PRIVADA</p><h1>Laboratorio de cámara</h1><span>Tu video se procesa únicamente en este dispositivo.</span></div>
+      <span class="privacy-pill">● PRUEBA PRIVADA</span>
+    </header>
+
+    <section class="lab-layout">
+      <div class="stage-card">
+        <div id="stage" class="stage">
+          <video id="camera" autoplay muted playsinline></video>
+          <canvas id="effectCanvas"></canvas>
+          <div id="cameraPlaceholder"><i>◉</i><strong>Prueba tu cámara</strong><span>Pulsa “Encender cámara” y acepta el permiso.</span></div>
+          <div class="stage-top"><span id="effectName">Sin efecto</span><span id="fpsLabel">LISTO</span></div>
+        </div>
+        <div class="stage-actions">
+          <button id="startCamera" class="primary" type="button">Encender cámara</button>
+          <button id="flipCamera" type="button" disabled>Girar cámara</button>
+          <button id="mirrorCamera" type="button" aria-pressed="true" disabled>Espejo</button>
+          <button id="takePhoto" type="button" disabled>Guardar muestra</button>
+        </div>
+        <p id="status" role="status">Nada se transmite ni se guarda en QSession.</p>
+      </div>
+
+      <aside class="effects-card">
+        <div class="control-heading"><div><p>EFECTOS DE CÁMARA</p><h2>Elige una muestra</h2></div><button id="clearEffect" type="button">Quitar</button></div>
+        <nav class="category-tabs" aria-label="Categorías">
+          <button type="button" data-category="looks" aria-pressed="true">Filtros</button>
+          <button type="button" data-category="entities" aria-pressed="false">Entidades</button>
+          <button type="button" data-category="couture" aria-pressed="false">Couture</button>
+          <button type="button" data-category="reactive" aria-pressed="false">Reactivos</button>
+        </nav>
+        <details class="custom-mask-studio">
+          <summary>✦ Creador de máscara, filtro o VJ</summary>
+          <div>
+            <label>¿Qué quieres crear?<select id="customEffectKind"><option value="mask">Máscara que sigue el rostro</option><option value="filter">Filtro abstracto de cámara</option><option value="vj">Efecto VJ animado</option></select></label>
+            <label>Nombre<input id="customMaskName" type="text" maxlength="40" placeholder="Ej. Espíritu de neón" /></label>
+            <label>Describe exactamente tu idea<textarea id="customEffectPrompt" maxlength="1200" rows="4" placeholder="Ej. Conserva sólo el rostro y el cabello. Conviértelo en una máscara de cristal oscuro con grietas turquesa, ojos visibles y bordes suaves."></textarea></label>
+            <div class="voice-instruction"><button id="recordEffectPrompt" class="secondary" type="button">● Dictar indicación</button><span id="voiceStatus">Hasta 30 segundos</span></div>
+            <label>Imagen de referencia (opcional)<input id="customMaskFile" type="file" accept="image/png,image/webp,image/jpeg" /></label>
+            <label class="custom-mask-rights"><input id="customMaskRights" type="checkbox" /> Tengo derecho a usar esta imagen, autorizo enviarla junto con mi instrucción a OpenAI para crear el efecto y no la usaré para engañar o suplantar a otra persona.</label>
+            <button id="addCustomMask" type="button" disabled>✦ Crear con IA y probar</button>
+            <small>La IA elimina el fondo y las esquinas del JPG. El resultado se guarda sólo en este dispositivo y nunca se publica automáticamente.</small>
+          </div>
+        </details>
+        <div id="effectGrid" class="effect-grid"></div>
+        <label class="intensity-control" for="effectIntensity"><span><b>Intensidad</b><output id="intensityValue">70%</output></span><input id="effectIntensity" type="range" min="0" max="100" value="70" /></label>
+        <div id="maskCalibrationControls" class="mask-calibration" hidden>
+          <header><b>Calibración de máscara</b><button id="resetMaskCalibration" type="button">Restablecer</button></header>
+          <label for="maskScale"><span>Tamaño <output id="maskScaleValue">100%</output></span><input id="maskScale" type="range" min="70" max="140" value="100" /></label>
+          <label for="maskOffset"><span>Altura <output id="maskOffsetValue">0</output></span><input id="maskOffset" type="range" min="-25" max="25" value="0" /></label>
+          <div id="customMaskAdvanced" hidden>
+            <label for="maskEyeGap"><span>Separación de ojos <output id="maskEyeGapValue">35%</output></span><input id="maskEyeGap" type="range" min="20" max="60" value="35" /></label>
+            <label for="maskEyeY"><span>Línea de ojos <output id="maskEyeYValue">45%</output></span><input id="maskEyeY" type="range" min="25" max="70" value="45" /></label>
+          </div>
+        </div>
+        <p class="lab-note"><strong>Seguimiento facial local activo.</strong> Las máscaras usan ojos, mejillas, frente, nariz y mentón para acompañar posición, escala e inclinación. Prueba moverte a ambos lados, acercarte y girar la cabeza.</p>
+      </aside>
+    </section>
+  </main>
+  <script type="module" src="/camera-effects-lab.js?v=8"></script>
+</body>
+</html>

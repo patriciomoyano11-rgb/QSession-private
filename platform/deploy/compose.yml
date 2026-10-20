@@ -1,0 +1,141 @@
+name: qsession
+
+services:
+  caddy:
+    image: livekit/caddyl4:v2.11.3
+    command: run --config /etc/caddy.yaml --adapter yaml
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - livekit
+      - qsession-app
+    volumes:
+      - ./caddy.yaml:/etc/caddy.yaml:ro
+      - qsession-caddy-data:/data
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server /etc/redis.conf
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./redis.conf:/etc/redis.conf:ro
+      - qsession-redis-data:/data
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  postgres:
+    image: postgres:17-alpine
+    command: postgres -c listen_addresses=127.0.0.1 -c max_connections=200
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - qsession.env
+    volumes:
+      - qsession-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  livekit:
+    image: livekit/livekit-server:v1.13.5
+    command: --config /etc/livekit.yaml
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - redis
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  edge-media-init:
+    image: alpine:3.22
+    restart: "no"
+    command: ["sh", "-c", "chown 1001:0 /out/edge-live && chmod 2775 /out/edge-live"]
+    volumes:
+      - qsession-edge-live:/out/edge-live
+
+  egress:
+    image: livekit/egress:v1.14.1
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      edge-media-init:
+        condition: service_completed_successfully
+      livekit:
+        condition: service_started
+      redis:
+        condition: service_started
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["umask 0002 && exec /entrypoint.sh"]
+    environment:
+      EGRESS_CONFIG_FILE: /etc/egress.yaml
+    volumes:
+      - ./egress.yaml:/etc/egress.yaml:ro
+      - qsession-edge-live:/out/edge-live
+    shm_size: 1gb
+    cap_add:
+      - SYS_ADMIN
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+  music-analysis:
+    build:
+      context: ..
+      dockerfile: analysis/Dockerfile
+    restart: unless-stopped
+    environment:
+      QSESSION_ORIGINAL_MUSIC_DIR: /data/original-music
+    volumes:
+      - qsession-data:/data
+    cpus: 2
+    mem_limit: 2g
+
+  qsession-app:
+    build:
+      context: ..
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      - egress
+      - livekit
+      - postgres
+      - redis
+    env_file:
+      - qsession.env
+    environment:
+      QSESSION_FIREBASE_SERVICE_ACCOUNT_FILE: /run/secrets/qsession-firebase-service-account.json
+    volumes:
+      - qsession-data:/data
+      - qsession-edge-live:/data/edge-live
+      - ./private/qsession-firebase-service-account.json:/run/secrets/qsession-firebase-service-account.json:ro
+    group_add:
+      - "0"
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
+
+volumes:
+  qsession-caddy-data:
+  qsession-redis-data:
+  qsession-postgres-data:
+  qsession-data:
+  qsession-edge-live:

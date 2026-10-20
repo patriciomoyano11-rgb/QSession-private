@@ -1,0 +1,18 @@
+{
+  "android": {
+    "version": "0.1.42",
+    "url": "/downloads/QSession-Android-latest.apk",
+    "filename": "QSession-Android-0.1.42.apk",
+    "artifact": "QSession-Android-0.1.42.apk",
+    "byteLength": 102878241,
+    "sha256": "4956bcad6db3c62bd7148180adce6287a2c03995bf4247b939ae019c8ba8a208"
+  },
+  "windows": {
+    "version": "0.4.15",
+    "url": "/downloads/QSession-Windows-latest.exe",
+    "filename": "Instalar-QSession-Windows.exe",
+    "artifact": "Instalar-QSession-Windows.exe",
+    "byteLength": 94843196,
+    "sha256": "bf8fcc89612163a6fbcbd9d532e9a0a9f626e9e481a76f92791d9526a403af69"
+  }
+}

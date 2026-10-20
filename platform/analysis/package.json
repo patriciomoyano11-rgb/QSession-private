@@ -1,0 +1,7 @@
+{
+  "name": "qsession-music-analysis",
+  "private": true,
+  "type": "module",
+  "scripts": {"prepare-model": "node prepare-model.mjs", "analyze": "node worker.mjs --once"},
+  "dependencies": {"@huggingface/transformers": "3.8.1"}
+}

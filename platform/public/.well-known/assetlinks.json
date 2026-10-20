@@ -1,0 +1,14 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "org.qsession.app",
+      "sha256_cert_fingerprints": [
+        "3E:A3:EB:CC:15:81:8A:4E:08:F7:23:6D:EA:05:57:02:F8:40:FC:65:A8:FE:62:31:F3:BC:7B:43:29:7F:47:14"
+      ]
+    }
+  }
+]

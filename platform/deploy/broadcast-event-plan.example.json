@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "planId": "broadcast-event-10000",
+  "status": "prepared",
+  "roomCode": "JNTUBY",
+  "roomId": "",
+  "targetViewers": 10000,
+  "maxParticipants": 10000,
+  "approvedBy": "",
+  "authorizationReference": "",
+  "issuedAt": null,
+  "expiresAt": null
+}

@@ -1,0 +1,9 @@
+.dotnet-cli/
+.nuget/
+native-media/.deps/
+windows/QSession.Host/bin/
+windows/QSession.Host/obj/
+build/windows-x64/
+*.user
+.DS_Store
+.build/

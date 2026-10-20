@@ -1,0 +1,12 @@
+[Unit]
+Description=Check QSession temporary VM retirement independently of the chat
+
+[Timer]
+OnBootSec=20s
+OnCalendar=*-*-* *:*:00
+Persistent=true
+AccuracySec=1s
+Unit=qsession-load-retirement.service
+
+[Install]
+WantedBy=timers.target

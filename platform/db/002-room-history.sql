@@ -1,0 +1,14 @@
+BEGIN;
+
+ALTER TABLE rooms
+  ADD COLUMN IF NOT EXISTS owner_account_id UUID REFERENCES accounts(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS room_type VARCHAR(40) NOT NULL DEFAULT 'custom',
+  ADD COLUMN IF NOT EXISTS peak_listeners INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS total_joins INTEGER NOT NULL DEFAULT 0,
+  ADD COLUMN IF NOT EXISTS disconnects INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS rooms_owner_history_idx
+  ON rooms (owner_account_id, created_at DESC)
+  WHERE owner_account_id IS NOT NULL;
+
+COMMIT;

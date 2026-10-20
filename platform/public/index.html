@@ -1,0 +1,1688 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#102746" />
+    <meta name="description" content="Q Session crea Silent Parties y experiencias en vivo: el DJ transmite y cada invitado escucha desde su propio teléfono y audífonos." />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/qsession-icon-192.png?v=20260911-brand-logo-v1" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/qsession-icon-192.png?v=20260911-brand-logo-v1" />
+    <link rel="stylesheet" href="/styles.css?v=20261018-event-capacity-v1" />
+    <title>Q Session · Silent Party y audio en vivo</title>
+    <link rel="stylesheet" href="/music-library.css?v=20261008-live-dj-v1" />
+    <link rel="stylesheet" href="/studio-light.css?v=20261015-blue-music-v1" />
+    <link rel="stylesheet" href="/qsession-sky-palette.css?v=20261016-sky-palette-v1" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="side-rail" aria-label="Navegación principal">
+        <a class="brand" href="#live" data-route="live" aria-label="Q Session, inicio">
+          <img src="/brand/qsession-icon-master.png?v=20260911-brand-logo-v1" alt="" />
+          <span><strong>Q Session</strong><small>SILENT PARTY · AUDIO EN VIVO</small></span>
+        </a>
+        <nav class="rail-nav">
+          <button type="button" data-view="create"><i>＋</i><span>Crear sesión</span></button>
+          <button class="active" type="button" data-view="live"><i>●</i><span>En vivo</span></button>
+          <button type="button" data-view="people"><i>◎</i><span>Personas</span></button>
+          <button type="button" data-view="chat"><i>✦</i><span>Chat</span></button>
+          <!-- GLOBAL_RAVE_NAV_PAUSED: acceso público reservado para una etapa posterior. -->
+          <!-- SPONSORS_NAV_PAUSED: conservar para reactivar el acceso lateral.
+          <button type="button" data-view="sponsors"><i>★</i><span>Sponsors</span></button>
+          -->
+          <button type="button" data-view="vision"><i>◇</i><span>Visión</span></button>
+          <button type="button" data-view="profile"><i>○</i><span>Perfil</span></button>
+        </nav>
+        <div class="rail-promise">
+          <span class="pulse-dot"></span>
+          <strong>Silent Party, sin equipos especiales</strong>
+          <p>Cada persona escucha desde su teléfono y sus audífonos.</p>
+        </div>
+      </aside>
+
+      <main class="main-surface">
+        <header class="topbar">
+          <a class="mobile-brand" href="#live" data-route="live"><img src="/brand/qsession-icon-master.png?v=20260911-brand-logo-v1" alt="" /><span><strong>Q Session</strong><small>SILENT PARTY</small></span></a>
+          <button id="sessionBackButton" class="session-back-button" type="button" hidden>← Atrás</button>
+          <details id="quickLiveRoomsMenu" class="quick-live-rooms-menu">
+            <summary aria-label="Ver salas en vivo">
+              <span class="quick-live-rooms-signal" aria-hidden="true"><i></i></span>
+              <strong class="quick-live-rooms-label">Salas en vivo</strong>
+              <b id="quickLiveRoomCount" hidden>0</b>
+              <i class="disclosure-chevron" aria-hidden="true"></i>
+            </summary>
+            <div class="quick-live-rooms-panel">
+              <header>
+                <div><small>AHORA</small><h2>Salas en vivo</h2></div>
+                <button id="refreshQuickLiveRooms" type="button" aria-label="Actualizar salas públicas">↻</button>
+              </header>
+              <div id="quickLiveRoomsList" class="quick-live-rooms-list" aria-live="polite">
+                <div class="quick-live-rooms-empty">Buscando transmisiones en vivo…</div>
+              </div>
+            </div>
+          </details>
+          <details id="languageControl" class="language-control">
+            <summary id="languageTrigger" aria-label="Cambiar idioma" aria-haspopup="listbox" aria-controls="languageMenu">
+              <b id="languageCurrentCode" data-i18n-ignore>ESP</b>
+              <i class="language-disclosure disclosure-chevron" aria-hidden="true"></i>
+            </summary>
+            <div id="languageMenu" class="language-menu" role="listbox" aria-label="Elegir idioma">
+              <button type="button" role="option" data-language-option="es" data-i18n-ignore>
+                <span>ES</span><strong>Español</strong><i aria-hidden="true">✓</i>
+              </button>
+              <button type="button" role="option" data-language-option="en" data-i18n-ignore>
+                <span>EN</span><strong>English</strong><i aria-hidden="true">✓</i>
+              </button>
+              <button type="button" role="option" data-language-option="de" data-i18n-ignore>
+                <span>DE</span><strong>Deutsch</strong><i aria-hidden="true">✓</i>
+              </button>
+            </div>
+            <select id="languageSelector" class="native-control-backup" aria-label="Idioma de la aplicación" tabindex="-1">
+              <option value="es">Español</option>
+              <option value="en">English</option>
+              <option value="de">Deutsch</option>
+            </select>
+          </details>
+          <span id="languageStatus" class="language-status" role="status" aria-live="polite"></span>
+          <button id="installAppButton" class="install-app-button" type="button" aria-label="Instalar Q Session" title="Instalar Q Session" hidden>
+            <b id="installAppButtonLabel">APP</b><span aria-hidden="true">↓</span><i id="appUpdateIndicator" class="app-update-indicator" aria-hidden="true" hidden></i>
+          </button>
+          <button id="accountShortcut" class="account-shortcut" type="button" aria-haspopup="dialog" aria-controls="accountMenuDialog" aria-label="Abrir menú">
+            <span id="accountInitial">Q</span><b id="accountLabel">MENÚ</b>
+          </button>
+        </header>
+
+        <section id="view-live" class="view active" data-view-panel="live" aria-labelledby="liveTitle">
+          <div class="live-stage">
+            <div class="stage-copy">
+              <h1 id="liveTitle">Tu sesión,<br /><span>todos conectados.</span></h1>
+              <div class="home-use-cases-spacer" aria-hidden="true"></div>
+            </div>
+            <div class="session-entry-actions">
+              <div class="home-session-action-bar" role="group" aria-label="Acciones principales de sesión">
+                <button id="homeJoinAction" type="button" data-home-session-action="join" aria-expanded="false" aria-controls="homeJoinPanel">
+                  <span class="home-session-action-icon" aria-hidden="true">→</span>
+                  <span><strong>Entrar a una sala</strong><small>Código, enlace o QR</small></span>
+                  <i class="disclosure-chevron" aria-hidden="true"></i>
+                </button>
+                <button id="homeCreateAction" type="button" data-home-session-action="create" aria-expanded="false" aria-controls="homeCreatePanel">
+                  <span class="home-session-action-icon" aria-hidden="true">＋</span>
+                  <span><strong>Crear una sala</strong><small>Requiere perfil e inicio de sesión</small></span>
+                  <i class="disclosure-chevron" aria-hidden="true"></i>
+                </button>
+              </div>
+              <div id="homeJoinPanel" class="home-session-panel" hidden>
+                <form id="joinRoomForm" class="session-card primary-card compact-join-card">
+                  <button id="scanRoomQr" class="qr-scan-button" type="button"><span aria-hidden="true">▦</span> Escanear código QR</button>
+                  <label for="roomCode">Código de seis caracteres o enlace de la sala</label>
+                  <div class="room-code-control">
+                    <input id="roomCode" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123 o pega el enlace" />
+                    <button type="submit">Entrar <span>→</span></button>
+                  </div>
+                  <p id="joinStatus" class="form-status" role="status">Escribe el código o pega el enlace compartido. No necesitas una cuenta.</p>
+                </form>
+              </div>
+              <div id="homeCreatePanel" class="home-session-panel home-create-panel" hidden></div>
+            </div>
+
+            <section id="publicRoomDirectory" class="public-room-directory" aria-labelledby="publicRoomsTitle">
+              <div class="public-room-directory-bar">
+                <button id="publicRoomsToggle" class="public-rooms-toggle" type="button" aria-expanded="false" aria-controls="publicRoomsPanel">
+                  <span class="public-rooms-live-mark" aria-hidden="true"><i></i></span>
+                  <span class="public-rooms-heading">
+                    <span class="eyebrow">EN VIVO AHORA</span>
+                    <strong id="publicRoomsTitle">Salas activas</strong>
+                  </span>
+                  <span class="public-room-meta">
+                    <span class="public-room-summary"><strong id="publicRoomCount">0</strong><span> salas activas</span></span>
+                    <span class="public-rooms-chevron disclosure-chevron" aria-hidden="true"></span>
+                  </span>
+                </button>
+                <button id="refreshPublicRooms" class="public-rooms-refresh" type="button" aria-label="Actualizar salas públicas">↻</button>
+              </div>
+              <div id="publicRoomsPanel" class="public-room-directory-panel" hidden>
+                <div id="listenerRoomHistory" class="listener-room-history">
+                  <button id="listenerRoomsToggle" class="listener-rooms-toggle" type="button" aria-expanded="false" aria-controls="listenerRoomsPanel">
+                    <span class="listener-rooms-icon" aria-hidden="true">↺</span>
+                    <span><strong>Tus salas</strong><small>Vuelve a tus salas recientes</small></span>
+                    <b id="listenerRoomHistoryCount" hidden>0</b>
+                    <i class="disclosure-chevron" aria-hidden="true"></i>
+                  </button>
+                  <div id="listenerRoomsPanel" class="listener-rooms-panel" hidden>
+                    <div id="listenerRoomsList" class="listener-rooms-list" aria-live="polite">
+                      <div class="listener-rooms-empty"><strong>Todavía no abriste ninguna sala.</strong><span>Cuando entres a una sala, quedará guardada aquí.</span></div>
+                    </div>
+                  </div>
+                </div>
+                <p class="public-room-directory-description">Solo mostramos salas públicas con audio y personas conectadas.</p>
+                <div id="publicRoomsList" class="public-room-list" aria-live="polite">
+                  <div class="public-room-empty"><strong>Buscando transmisiones en vivo…</strong></div>
+                </div>
+              </div>
+            </section>
+
+            <div id="liveMediaMount">
+              <section id="mediaConsole" class="media-console" aria-labelledby="mediaConsoleTitle" hidden>
+              <header class="media-console-header">
+                <div>
+                  <p id="mediaRoleLabel" class="eyebrow">SALA EN VIVO</p>
+                  <h2 id="mediaConsoleTitle">Consola de transmisión</h2>
+                </div>
+                <div class="media-console-facts">
+                  <span id="mediaConnectionBadge"><i></i><b>Sin conectar</b></span>
+                  <span><b id="mediaParticipantCount">0</b> conectados</span>
+                  <span>Sala <b id="mediaRoomCode">——</b></span>
+                </div>
+              </header>
+
+              <div class="media-console-grid">
+                <div class="media-preview">
+                  <div id="mediaStage" class="media-stage is-idle" data-camera-framing="far">
+                    <video id="liveVideo" autoplay playsinline muted hidden poster="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="></video>
+                    <video id="broadcastVideo" autoplay playsinline muted hidden poster="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="></video>
+                    <div id="mediaFallback" class="media-fallback">
+                      <div class="signal-orbit"><span></span><b class="signal-frequency" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></b><img src="/icons/qsession-mark-light.png?v=20260911-brand-logo-v1" alt="" /></div>
+                      <strong id="mediaFallbackTitle">Tu escenario está listo</strong>
+                      <span id="mediaFallbackText">Activa la transmisión cuando quieras aparecer.</span>
+                    </div>
+                    <div class="media-stage-topline"><span id="mediaLiveBadge" hidden>PREPARADO</span><span id="mediaQuality">Audio HD · red mundial</span></div>
+                    <button id="mediaFullscreen" class="media-fullscreen" type="button" aria-label="Ver video en pantalla completa" hidden>⛶</button>
+                  </div>
+                  <div id="musicLibrarySlot" class="music-library-slot"></div>
+                  <section id="roomPromotions" class="room-promotions" aria-label="Promociones de la sala" hidden></section>
+                  <div id="roomResult" class="room-result" hidden>
+                    <div class="room-result-copy">
+                      <span>INVITACIÓN DE LA SALA</span>
+                      <strong id="createdRoomName"></strong>
+                      <p>Este QR abre directamente la transmisión.</p>
+                    </div>
+                    <div class="room-result-access">
+                      <div id="roomQr" class="room-qr" aria-label="Código QR para entrar a la sala"></div>
+                      <div class="room-result-code"><span>CÓDIGO DE ACCESO</span><strong id="createdRoomCode">——</strong><small>Muéstralo completo, sin reflejos y con brillo medio.</small></div>
+                    </div>
+                    <div id="roomShareControl" class="room-share-control">
+                      <div class="room-share-actions">
+                        <button id="copyRoomInvite" class="room-share-trigger room-share-copy" type="button">
+                          <span class="room-share-trigger-icon" aria-hidden="true">⧉</span>
+                          <span><strong>Copiar invitación</strong><small>Código y enlace</small></span>
+                        </button>
+                        <button id="shareRoomInvite" class="room-share-trigger room-share-open" type="button" aria-expanded="false" aria-controls="roomShareMenu">
+                          <span class="room-share-trigger-icon" aria-hidden="true">↗</span>
+                          <span><strong>Compartir invitación</strong><small>Aplicaciones y contactos</small></span>
+                          <span class="room-share-trigger-chevron disclosure-chevron" aria-hidden="true"></span>
+                        </button>
+                      </div>
+                      <div id="roomShareMenu" class="room-share-menu" role="dialog" aria-label="Opciones para compartir la sala" hidden>
+                        <header>
+                          <div><span>COMPARTIR SALA</span><strong id="roomShareName">Sesión Q Session</strong></div>
+                          <button id="closeRoomShareMenu" class="room-share-close" type="button" aria-label="Cerrar opciones para compartir">×</button>
+                        </header>
+                        <div class="room-share-code-line">
+                          <span>Código de acceso</span>
+                          <strong id="roomShareCode">——</strong>
+                          <small>Código y enlace incluidos</small>
+                        </div>
+                        <button id="nativeShareRoom" class="room-share-native" type="button" data-room-share="native">
+                          <span class="room-share-native-icon" aria-hidden="true">↗</span>
+                          <span><strong>Todas las aplicaciones</strong><small>Abre el menú para compartir de este dispositivo</small></span>
+                          <b aria-hidden="true">→</b>
+                        </button>
+                        <div class="room-share-grid" aria-label="Accesos rápidos para compartir">
+                          <button type="button" data-room-share="whatsapp"><span aria-hidden="true">W</span><strong>WhatsApp</strong></button>
+                          <button type="button" data-room-share="telegram"><span aria-hidden="true">T</span><strong>Telegram</strong></button>
+                          <button type="button" data-room-share="email"><span aria-hidden="true">@</span><strong>Correo</strong></button>
+                          <button type="button" data-room-share="sms"><span aria-hidden="true">SMS</span><strong>Mensaje</strong></button>
+                          <button id="copyRoomCode" type="button" data-room-share="copy-code"><span aria-hidden="true">#</span><strong>Copiar código</strong></button>
+                          <button id="copyRoomLink" type="button" data-room-share="copy-link"><span aria-hidden="true">⌁</span><strong>Copiar enlace</strong></button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div id="mediaAudioRack" hidden aria-hidden="true"></div>
+                  <div id="roomMusicCredit" hidden aria-live="polite"></div>
+                </div>
+
+                <aside class="media-controls">
+                  <div id="djControls">
+                    <p class="control-kicker">SEÑAL DEL DJ</p>
+                    <h3>Tu transmisión</h3>
+                    <p class="host-control-intro">Audio, cámara y música en un solo lugar.</p>
+                    <div id="recordedPlaybackControls" class="control-pair" hidden><button id="toggleRecordedPlayback" type="button" disabled>Pausar video</button><button id="restartRecordedPlayback" type="button" disabled>Volver al inicio</button></div>
+                    <button id="startBroadcast" class="control-primary" type="button">Iniciar transmisión</button>
+                    <div class="audio-meter" aria-label="Nivel de audio">
+                      <div><span>L</span><i><b id="audioMeterLeft"></b></i></div>
+                      <div><span>R</span><i><b id="audioMeterRight"></b></i></div>
+                    </div>
+                    <div class="broadcast-primary-actions">
+                      <button id="toggleBroadcastAudio" class="media-icon-action" data-action-icon="volume-muted" data-control-state="inactive" type="button" aria-label="Silenciar audio" title="Silenciar audio" disabled><span class="media-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10v4h3l4 3V7l-4 3H4Z"/><path d="m15 10 5 5m0-5-5 5"/></svg></span><span class="media-action-label">Silenciar audio</span></button>
+                      <button id="toggleCamera" class="media-icon-action" data-action-icon="camera-off" data-control-state="inactive" type="button" aria-label="Activar cámara" title="Activar cámara" disabled><span class="media-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 7.5h4l1.4-2h5.2l1.4 2h2.5A2.5 2.5 0 0 1 20 10v5.5"/><path d="M18 18H5.5A2.5 2.5 0 0 1 3 15.5V10"/><path d="m3 3 18 18"/><path d="M9.8 10.1A3.4 3.4 0 0 0 14 14.2"/></svg></span><span class="media-action-label">Activar cámara</span></button>
+                      <button id="changeBroadcastSource" class="media-icon-action" data-action-icon="ports" data-control-state="neutral" type="button" aria-label="Cambiar fuente de música" title="Cambiar fuente de música" disabled><span class="media-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="3" y="7" width="6" height="10" rx="1.5"/><path d="M6 10v4M9 12h3c2 0 3-1 3-3M12 12c2 0 3 1 3 3"/><rect x="15" y="4" width="6" height="6" rx="1.5"/><rect x="15" y="14" width="6" height="6" rx="1.5"/></svg></span><span class="media-action-label">Cambiar fuente de música</span></button>
+                    </div>
+                    <button type="button" class="music-library-open" data-open-music>♫ Ir a biblioteca y Auto DJ</button>
+                    <details id="hostAudioSetup" class="host-audio-setup" open><summary><span>Elegir fuente de audio</span><i class="disclosure-chevron" aria-hidden="true"></i></summary><div class="host-audio-setup-body">
+                    <label for="broadcastSourceTrigger">Fuente de audio</label>
+                    <div id="broadcastSourcePicker" class="broadcast-source-picker">
+                      <button id="broadcastSourceTrigger" class="broadcast-source-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="broadcastSourceMenu">
+                        <span class="broadcast-source-trigger-icon" aria-hidden="true">♫</span>
+                        <span><strong id="broadcastSourceTriggerLabel">Biblioteca Q Session</strong><small id="broadcastSourceTriggerDescription">Tu catálogo original, playlists y Autopiloto DJ.</small></span>
+                        <i class="disclosure-chevron" aria-hidden="true"></i>
+                      </button>
+                      <div id="broadcastSourceMenu" class="broadcast-source-menu" role="listbox" aria-label="Seleccionar fuente de audio" hidden>
+                        <button type="button" role="option" aria-selected="true" data-broadcast-source-value="library"><span>♫</span><span><strong>Biblioteca Q Session</strong><small>Tu catálogo original, playlists y Autopiloto DJ.</small></span><i>✓</i></button>
+                        <button type="button" role="option" aria-selected="false" data-broadcast-source-value="tab"><span>♫</span><span><strong>Pestaña de Chrome</strong><small>Audio estéreo directo, sin procesamiento de voz.</small></span><i></i></button>
+                        <button type="button" role="option" aria-selected="false" data-broadcast-source-value="microphone"><span>◉</span><span><strong>Micrófono integrado</strong><small>Voz, música y ambiente desde el dispositivo.</small></span><i></i></button>
+                        <button type="button" role="option" aria-selected="false" data-broadcast-source-value="usb"><span>USB</span><span><strong>USB o interfaz de audio</strong><small>Interfaz, mezclador o micrófono USB.</small></span><i></i></button>
+                        <button type="button" role="option" aria-selected="false" data-broadcast-source-value="hdmi"><span>▭</span><span><strong>Audio HDMI mediante capturadora</strong><small>Audio de una capturadora compatible.</small></span><i></i></button>
+                        <button type="button" role="option" aria-selected="false" data-broadcast-source-value="line"><span>3,5</span><span><strong>Conector de micrófono (3,5 mm)</strong><small>Entrada física de 3,5 mm.</small></span><i></i></button>
+                        <button type="button" role="option" aria-selected="false" data-broadcast-source-value="bluetooth"><span>BT</span><span><strong>Micrófono Bluetooth</strong><small>Micrófono inalámbrico conectado.</small></span><i></i></button>
+                      </div>
+                      <select id="broadcastSource" class="native-control-backup" aria-hidden="true" tabindex="-1">
+                        <option value="library" selected>Biblioteca Q Session</option>
+                        <option value="tab">Pestaña de Chrome</option>
+                        <option value="microphone">Micrófono integrado</option>
+                        <option value="usb">USB o interfaz de audio</option>
+                        <option value="hdmi">Audio HDMI mediante capturadora</option>
+                        <option value="line">Conector de micrófono (3,5 mm)</option>
+                        <option value="bluetooth">Micrófono Bluetooth</option>
+                      </select>
+                    </div>
+                    <details id="broadcastQualityControl" class="broadcast-quality-control" hidden>
+                      <summary>
+                        <span><small>CALIDAD DE TRANSMISIÓN</small><strong id="broadcastQualitySummary">Hasta 510 kbps</strong></span>
+                        <i class="disclosure-chevron" aria-hidden="true"></i>
+                      </summary>
+                      <div class="broadcast-quality-panel">
+                        <label for="broadcastAudioBitrate">Límite de audio</label>
+                        <select id="broadcastAudioBitrate" disabled aria-label="Calidad administrada por QSession">
+
+
+
+                          <option value="320000" selected>320 kbps · Muy alta</option>
+
+                        </select>
+                        <small id="broadcastAudioBitrateStatus">Puedes cambiarlo en vivo. WebRTC usará menos si la red lo necesita.</small>
+                      </div>
+                    </details>
+                    <div id="microphoneModeControl" class="microphone-mode-control" hidden>
+                      <label for="microphoneMode">Tratamiento del audio</label>
+                      <select id="microphoneMode">
+                        <option value="music" selected>Música y ambiente</option>
+                        <option value="voice">Voz</option>
+                      </select>
+                    </div>
+                    <div id="audioInputControl" class="audio-input-control" hidden>
+                      <div class="audio-input-heading">
+                        <label for="audioInput">Entrada de audio</label>
+                        <button id="refreshAudioInputs" type="button" aria-label="Buscar entradas de audio" title="Buscar USB, HDMI, conector y Bluetooth">↻</button>
+                      </div>
+                      <select id="audioInput" aria-label="Seleccionar entrada de audio">
+                        <option value="">Automática del sistema</option>
+                      </select>
+                      <small id="audioInputStatus">Conecta la entrada USB, HDMI, 3,5 mm o Bluetooth y pulsa ↻.</small>
+                    </div>
+                    <p id="captureHelp" class="capture-help">En el celular, Q Session utilizará el micrófono del dispositivo. Habla cerca del teléfono para comprobar las barras.</p>
+                    </div></details>
+                    <details id="voiceOverlayControl" class="voice-overlay-control">
+                      <summary class="voice-overlay-heading">
+                        <div><span>MICRÓFONO ADICIONAL</span><strong id="voiceOverlayTitle">Habla sobre la transmisión</strong></div>
+                        <span id="voiceOverlayState">Preparado</span>
+                        <i class="disclosure-chevron" aria-hidden="true"></i>
+                      </summary>
+                      <div class="voice-overlay-panel">
+                        <label id="voiceOverlayInputLabel" for="voiceOverlayInput">Entrada para voz</label>
+                        <div class="voice-overlay-device-row">
+                          <div id="voiceOverlayDevicePicker" class="voice-overlay-device-picker">
+                            <button id="voiceOverlayDeviceTrigger" class="voice-overlay-device-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="voiceOverlayDeviceMenu">
+                              <span id="voiceOverlayDeviceIcon" class="voice-overlay-device-trigger-icon" aria-hidden="true">AUTO</span>
+                              <span>
+                                <strong id="voiceOverlayDeviceLabel">Automática del sistema</strong>
+                                <small id="voiceOverlayDeviceDescription">Usa la entrada predeterminada del dispositivo.</small>
+                              </span>
+                              <i class="disclosure-chevron" aria-hidden="true"></i>
+                            </button>
+                            <div id="voiceOverlayDeviceMenu" class="voice-overlay-device-menu" role="listbox" aria-labelledby="voiceOverlayInputLabel" hidden></div>
+                            <select id="voiceOverlayInput" aria-label="Seleccionar micrófono adicional" tabindex="-1" aria-hidden="true">
+                              <option value="">Automática del sistema</option>
+                            </select>
+                          </div>
+                          <button id="refreshVoiceOverlayInputs" type="button" aria-label="Buscar micrófonos" title="Buscar micrófonos Bluetooth, USB y conector de 3,5 mm">↻</button>
+                        </div>
+                        <small class="voice-overlay-device-help">Puedes usar el micrófono integrado. Para uno externo: conecta USB o 3,5 mm, o empareja Bluetooth en los ajustes del dispositivo. Pulsa buscar, permite el acceso al micrófono y selecciona la entrada. Comprueba el nivel antes de abrirlo.</small>
+                        <details class="voice-overlay-tone">
+                          <summary><span>Ajustes de voz</span><small>Volumen y ecualización</small><i class="disclosure-chevron" aria-hidden="true"></i></summary>
+                          <div class="voice-overlay-tone-grid">
+                            <label for="voiceOverlayVolume"><span>Volumen</span><output id="voiceOverlayVolumeValue" for="voiceOverlayVolume">100%</output></label>
+                            <input id="voiceOverlayVolume" type="range" min="0" max="150" step="1" value="100" />
+                            <label for="voiceOverlayBass"><span>Graves</span><output id="voiceOverlayBassValue" for="voiceOverlayBass">0 dB</output></label>
+                            <input id="voiceOverlayBass" type="range" min="-12" max="12" step="1" value="0" />
+                            <label for="voiceOverlayTreble"><span>Agudos</span><output id="voiceOverlayTrebleValue" for="voiceOverlayTreble">0 dB</output></label>
+                            <input id="voiceOverlayTreble" type="range" min="-12" max="12" step="1" value="0" />
+                          </div>
+                          <p>Filtro anti-retumbo y protección contra saturación activos.</p>
+                        </details>
+                        <div class="voice-overlay-action-row">
+                          <i class="voice-overlay-meter" aria-label="Nivel del micrófono"><b id="voiceOverlayMeter"></b></i>
+                          <button id="toggleVoiceOverlay" type="button" disabled>Abrir micrófono</button>
+                        </div>
+                        <small id="voiceOverlayStatus">La música seguirá sonando mientras hablas. Admite micrófonos Bluetooth, USB, 3,5 mm e integrados.</small>
+                      </div>
+                    </details>
+
+                  </div>
+
+                  <details id="activeRoomSettings" class="active-room-settings" hidden>
+                    <summary><span><b>Configurar sala activa</b><small>Acceso, participación y traducción</small></span><i class="disclosure-chevron" aria-hidden="true"></i></summary>
+                    <form id="activeRoomSettingsForm" class="active-room-settings-form">
+                      <div class="active-room-settings-grid">
+                        <label>Visibilidad<select id="activeRoomVisibility"><option value="public">Pública · visible en el directorio</option><option value="private">Privada · acceso por invitación</option></select></label>
+                        <label>Aforo de la sala<input id="activeRoomCapacity" type="number" min="1" max="1000000" step="1" inputmode="numeric" aria-describedby="activeRoomCapacityHelp" /></label>
+                        <label>Uso de capacidad<select id="activeRoomCapacityMode"><option value="expected">Estimación</option><option value="limited">Límite máximo</option></select></label>
+                        <label>Idioma original<select id="activeTranslationSource"><option value="es">Español</option><option value="en">English</option><option value="de">Deutsch</option></select></label>
+                        <label class="active-room-wide">Traducción<select id="activeTranslationMode"><option value="subtitles">Audio original y subtítulos</option><option value="audio">Audio traducido en tiempo real</option></select></label>
+                      </div>
+                      <p id="activeRoomCapacityHelp" class="room-capacity-help">Puedes definir un límite de ingreso dentro del aforo contratado.</p>
+                      <fieldset><legend>Formas de ingreso</legend><div class="active-room-checks"><label><input type="checkbox" data-active-access="link" /> Enlace</label><label><input type="checkbox" data-active-access="code" /> Código</label><label><input type="checkbox" data-active-access="qr" /> QR</label></div></fieldset>
+                      <fieldset><legend>Idiomas de traducción</legend><div class="active-room-checks"><label><input type="checkbox" data-active-language="es" /> Español</label><label><input type="checkbox" data-active-language="en" /> English</label><label><input type="checkbox" data-active-language="de" /> Deutsch</label></div></fieldset>
+                      <fieldset><legend>Funciones activas</legend><div class="active-room-checks active-room-feature-checks">
+                        <label><input type="checkbox" data-active-feature="allowPublicChat" /> Chat</label><label><input type="checkbox" data-active-feature="allowGuestCameras" /> Cámaras</label><label><input type="checkbox" data-active-feature="allowSharedFiles" /> Archivos</label><label><input type="checkbox" data-active-feature="allowSpeakingQueue" /> Turnos</label><label><input type="checkbox" data-active-feature="allowQuestions" /> Preguntas</label><label><input type="checkbox" data-active-feature="allowPolls" /> Encuestas</label><label><input type="checkbox" data-active-feature="allowReactions" /> Reacciones</label><label><input type="checkbox" data-active-feature="allowRecording" /> Grabación</label>
+                      </div></fieldset>
+                      <button class="control-primary" type="submit">Guardar cambios</button>
+                      <p id="activeRoomSettingsStatus" class="form-status" role="status"></p>
+                    </form>
+                  </details>
+
+                  <div id="listenerControls" hidden>
+                    <p class="control-kicker">MODO OYENTE</p>
+                    <h3 id="listenerRoomName">Entrar a la señal</h3>
+                    <div id="listenerRoomInvite" class="listener-room-invite">
+                      <span class="listener-room-invite-state"><i aria-hidden="true"></i><span>ESTÁS EN LA SALA</span></span>
+                      <strong id="listenerRoomCode">——</strong>
+                      <div class="listener-room-invite-actions">
+                        <button id="copyListenerRoomInvite" type="button" aria-label="Copiar invitación"><span aria-hidden="true">⧉</span><small>Copiar</small></button>
+                        <button id="shareListenerRoomInvite" type="button" aria-label="Compartir invitación" aria-expanded="false" aria-controls="listenerRoomShareMenu"><span aria-hidden="true">↗</span><small>Compartir</small></button>
+                      </div>
+                      <div id="listenerRoomShareMenu" class="listener-room-share-menu" role="menu" aria-label="Compartir invitación" hidden>
+                        <button type="button" role="menuitem" data-listener-room-share="native"><span aria-hidden="true">↗</span><strong>Todas las aplicaciones</strong></button>
+                        <button type="button" role="menuitem" data-listener-room-share="whatsapp"><span aria-hidden="true">W</span><strong>WhatsApp</strong></button>
+                        <button type="button" role="menuitem" data-listener-room-share="telegram"><span aria-hidden="true">T</span><strong>Telegram</strong></button>
+                        <button type="button" role="menuitem" data-listener-room-share="email"><span aria-hidden="true">@</span><strong>Correo</strong></button>
+                      </div>
+                      <small id="listenerRoomInviteStatus" class="sr-only" aria-live="polite"></small>
+                    </div>
+                    <button id="joinBroadcast" class="control-primary" type="button" hidden>Reintentar conexión</button>
+                    <details id="listenerOutputControl" class="listener-output-control" open>
+                      <summary class="listener-output-summary">
+                        <span><strong>Salida de audio</strong><small id="listenerOutputSelection">Normal</small></span>
+                        <i class="disclosure-chevron" aria-hidden="true"></i>
+                      </summary>
+                      <div class="listener-output-panel">
+                        <div class="listener-output-heading"><strong>Salida de audio</strong><span>AJUSTE PERSONAL</span></div>
+                        <p>Normal conserva la señal original. Si tus auriculares saturan, prueba primero -3 dB.</p>
+                        <div class="listener-output-presets" role="group" aria-label="Nivel de salida de audio">
+                          <button type="button" data-listener-output-gain="1" aria-pressed="true" disabled><strong>Normal</strong><small>0 dB</small></button>
+                          <button type="button" data-listener-output-gain=".708" aria-pressed="false" disabled><strong>Auriculares</strong><small>-3 dB</small></button>
+                          <button type="button" data-listener-output-gain=".501" aria-pressed="false" disabled><strong>Auriculares sensibles</strong><small>-6 dB</small></button>
+                        </div>
+                        <small id="listenerOutputStatus">Señal original directa, sin refuerzo ni procesamiento.</small>
+                      </div>
+                    </details>
+                    <div class="control-pair listener-primary-actions">
+                      <button id="toggleListenerSound" class="media-icon-action" data-action-icon="volume-muted" data-control-state="inactive" type="button" aria-label="Silenciar" title="Silenciar" disabled><span class="media-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 10v4h3l4 3V7l-4 3H4Z"/><path d="m15 10 5 5m0-5-5 5"/></svg></span><span class="media-action-label">Silenciar</span></button>
+                      <button id="toggleListenerCamera" class="media-icon-action" data-action-icon="camera-off" data-control-state="inactive" type="button" aria-label="Activar mi cámara" title="Activar mi cámara" disabled><span class="media-action-icon" aria-hidden="true"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M3 7.5h4l1.4-2h5.2l1.4 2h2.5A2.5 2.5 0 0 1 20 10v5.5"/><path d="M18 18H5.5A2.5 2.5 0 0 1 3 15.5V10"/><path d="m3 3 18 18"/><path d="M9.8 10.1A3.4 3.4 0 0 0 14 14.2"/></svg></span><span class="media-action-label">Activar mi cámara</span></button>
+                    </div>
+                    <button id="leaveBroadcast" class="control-danger" type="button" disabled>Salir de la sala</button>
+                  </div>
+                  <details id="cameraSettingsControl" class="camera-settings-control" hidden>
+                    <summary>
+                      <span class="camera-settings-summary-copy"><i aria-hidden="true">▣</i><span><strong>Cámara y encuadre</strong><small id="cameraSettingsSelection">Cámara preparada · Horizontal · Lejos</small></span></span>
+                      <b class="camera-settings-chevron disclosure-chevron" aria-hidden="true"></b>
+                    </summary>
+                    <div class="camera-settings-panel">
+                  <div id="cameraSourceControl" class="camera-source-control" hidden>
+                    <div class="camera-source-heading"><strong>Fuente de video</strong><button id="refreshCameraDevices" type="button" aria-label="Actualizar cámaras disponibles" title="Actualizar cámaras">↻</button></div>
+                    <div id="cameraDevicePicker" class="camera-device-picker">
+                      <button id="cameraDeviceTrigger" class="camera-device-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="cameraDeviceMenu" disabled>
+                        <span><strong id="cameraDeviceLabel">Buscando cámaras…</strong><small id="cameraDeviceDescription">Q Session identificará las cámaras disponibles.</small></span>
+                        <i class="disclosure-chevron" aria-hidden="true"></i>
+                      </button>
+                      <div id="cameraDeviceMenu" class="camera-device-menu" role="listbox" aria-label="Seleccionar cámara" hidden></div>
+                      <select id="cameraDevice" aria-hidden="true" tabindex="-1" disabled><option value="">Buscando cámaras…</option></select>
+                    </div>
+                    <small id="cameraSourceStatus">Una capturadora HDMI compatible aparecerá aquí como entrada de video USB.</small>
+                  </div>
+                  <div id="cameraOrientationControl" class="camera-orientation-control" hidden>
+                    <div class="camera-orientation-heading"><strong>Formato de video</strong><span id="cameraOrientationDefault">Automático según tu dispositivo</span></div>
+                    <div class="camera-orientation-presets" role="group" aria-label="Formato de video de la cámara">
+                      <button type="button" data-camera-orientation="portrait" aria-pressed="false">▯ Vertical</button>
+                      <button type="button" data-camera-orientation="landscape" aria-pressed="false">▭ Horizontal</button>
+                    </div>
+                    <small id="cameraOrientationStatus">Puedes cambiar el formato antes o durante la transmisión.</small>
+                  </div>
+                  <div id="cameraFramingControl" class="camera-framing-control" hidden>
+                    <div class="camera-framing-heading"><strong>Distancia visual</strong><span>Elige cuánto espacio quieres mostrar.</span></div>
+                    <div class="camera-framing-presets" role="group" aria-label="Distancia visual de la cámara">
+                      <button type="button" data-camera-framing="far" aria-pressed="true">Lejos</button>
+                      <button type="button" data-camera-framing="medium" aria-pressed="false">Medio</button>
+                      <button type="button" data-camera-framing="near" aria-pressed="false">Cerca</button>
+                    </div>
+                    <small id="cameraFramingStatus">Lejos muestra el encuadre completo.</small>
+                    <details id="cameraZoomGroup" class="camera-zoom-control" hidden>
+                      <summary><span>Zoom óptico</span><b id="cameraZoomSummary">1×</b><i class="disclosure-chevron" aria-hidden="true"></i></summary>
+                      <div class="camera-zoom-fields">
+                        <label for="cameraZoom">Ajuste real de la cámara</label>
+                        <select id="cameraZoom" disabled>
+                          <option value="0.5">0.5× · gran angular</option>
+                          <option value="1">1×</option>
+                          <option value="2">2×</option>
+                          <option value="3">3×</option>
+                        </select>
+                        <small id="cameraZoomStatus">Disponible si la cámara permite zoom real.</small>
+                      </div>
+                    </details>
+                  </div>
+                  <div id="cameraEffectsControl" class="camera-effects-control" hidden>
+                    <div class="camera-effects-heading"><strong>Efectos QSession</strong><span id="cameraEffectSelection">Natural</span></div>
+                    <p>El efecto se integra en la señal que reciben los oyentes.</p>
+                    <div class="camera-effect-options" role="group" aria-label="Efectos de cámara del DJ">
+                      <button type="button" data-camera-effect="none" aria-pressed="true"><i>N</i><span>Natural</span></button>
+                      <button type="button" data-camera-effect="qfauna" aria-pressed="false"><i style="background-image:url('/camera-effects/q-fauna-jaguar.png')"></i><span>Q‑Fauna</span></button>
+                      <button type="button" data-camera-effect="halo" aria-pressed="false"><i style="background-image:url('/camera-effects/resonance-halo.png')"></i><span>Halo</span></button>
+                      <button type="button" data-camera-effect="veil" aria-pressed="false"><i style="background-image:url('/camera-effects/quantum-veil.png')"></i><span>Quantum</span></button>
+                      <button type="button" data-camera-effect="field" aria-pressed="false"><i>RF</i><span>Resonance</span></button>
+                      <button type="button" data-camera-effect="photons" aria-pressed="false"><i>PG</i><span>Photons</span></button>
+                      <button type="button" data-camera-effect="nocturne" aria-pressed="false"><i>27</i><span>Nocturne</span></button>
+                      <button type="button" data-camera-effect="spectral" aria-pressed="false"><i>SI</i><span>Spectral</span></button>
+                    </div>
+                    <label class="camera-effect-intensity" for="cameraEffectIntensity"><span>Intensidad <output id="cameraEffectIntensityValue">70%</output></span><input id="cameraEffectIntensity" type="range" min="0" max="100" value="70" /></label>
+                    <a class="camera-effect-creator-link" href="/camera-effects-lab.html"><span aria-hidden="true">✦</span><span><b>Crear con IA</b><small>Describe un filtro, máscara, disfraz o visual VJ y aporta tus patrones.</small></span><i aria-hidden="true">→</i></a>
+                    <small id="cameraEffectStatus">Selecciona el efecto antes o durante la transmisión.</small>
+                  </div>
+                    </div>
+                  </details>
+                  <details id="connectionMonitor" class="connection-monitor" hidden>
+                    <summary><span><i id="connectionHealthDot"></i> Calidad de señal</span><span class="connection-monitor-state"><b id="connectionHealth">Midiendo…</b><i class="disclosure-chevron" aria-hidden="true"></i></span></summary>
+                    <div class="connection-monitor-body">
+                      <div class="connection-bandwidth">
+                        <div><span>Subida</span><strong id="connectionUpload">—</strong><i><b id="connectionUploadBar"></b></i></div>
+                        <div><span>Descarga</span><strong id="connectionDownload">—</strong><i><b id="connectionDownloadBar"></b></i></div>
+                      </div>
+                      <dl class="connection-metrics">
+                        <div><dt>Capacidad</dt><dd id="connectionCapacity">—</dd></div>
+                        <div><dt>Latencia</dt><dd id="connectionLatency">—</dd></div>
+                        <div><dt>Pérdida</dt><dd id="connectionLoss">—</dd></div>
+                        <div><dt>Red</dt><dd id="connectionQuality">—</dd></div>
+                      </dl>
+                      <p id="connectionAdvice" role="status">Esperando datos de la transmisión.</p>
+                      <small>Medición WebRTC aproximada, actualizada cada 2 segundos.</small>
+                    </div>
+                  </details>
+                  <p id="flowerListeningStatus" class="flower-listening-status" role="status" hidden><span aria-hidden="true">✿</span> Tu permanencia se reconoce con flores.</p>
+                  <p id="mediaStatus" class="media-status" role="status">Esperando una acción.</p>
+                  <div id="hostSessionDangerZone" class="host-session-danger-zone" hidden>
+                    <button id="stopBroadcast" class="close-session-button" type="button" aria-haspopup="dialog" aria-controls="confirmationDialog" disabled>
+                      <span aria-hidden="true">×</span>
+                      <span><b>Cerrar sesión</b><small>Finaliza la transmisión · requiere confirmación.</small></span>
+                    </button>
+                  </div>
+                </aside>
+              </div>
+              </section>
+            </div>
+
+            <aside id="windowsInstallCard" class="windows-install-card" aria-labelledby="windowsInstallTitle">
+              <img src="/icons/qsession-icon-192.png?v=20260911-brand-logo-v1" alt="" />
+              <div>
+                <h2 id="windowsInstallTitle">Q Session para Windows</h2>
+                <span>Un solo instalador: crea los accesos directos y abre Q Session al terminar.</span>
+              </div>
+              <div class="app-download-actions">
+                <button id="installAppHeroButton" type="button">Descargar para Windows <span>↓</span></button>
+                <button id="downloadAndroidButton" type="button">Descargar Android <span>↓</span></button>
+              </div>
+            </aside>
+            <p class="home-purpose-footer">Q Session convierte cada teléfono en un receptor audiovisual en vivo.</p>
+          </div>
+        </section>
+
+        <section id="view-create" class="view" data-view-panel="create" aria-labelledby="createTitle" hidden>
+          <div class="create-session-stage">
+            <div class="create-session-heading">
+              <p class="eyebrow">PARA QUIENES CREAN Y CONECTAN</p>
+              <h1 id="createTitle">Crea la sesión,<br /><span>comparte y conecta.</span></h1>
+              <p>Reúne a tu comunidad con imagen, sonido y conversación en vivo. Ideal para clases, bienestar, hoteles, música y eventos.</p>
+            </div>
+
+            <div class="session-actions single-action">
+              <form id="createRoomForm" class="session-card creator-card">
+                <span class="step">01</span>
+                <div><p>NUEVA SESIÓN</p><h2>Crear una sala pública o privada</h2></div>
+                <div class="creator-command-deck" aria-label="Configuración principal de la sala">
+                  <details id="creatorBillingPanel" class="creator-command creator-billing-panel" data-creator-command aria-labelledby="creatorBillingTitle">
+                    <summary>
+                      <span class="creator-command-index" aria-hidden="true">01</span>
+                      <span class="creator-command-copy"><small>PASO 1</small><strong id="creatorBillingTitle">Plan y acceso</strong></span>
+                      <span id="creatorCreditBalance" class="creator-command-state">Consultando…</span>
+                      <i class="disclosure-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="creator-command-content creator-billing-content">
+                      <div id="creatorPlanList" class="creator-plan-list"></div>
+                      <button id="largeEventQuoteOpen" class="custom-quote-open" type="button" aria-haspopup="dialog" aria-controls="customQuoteDialog">
+                        <span aria-hidden="true">◉</span>
+                        <span><strong>Evento de 10.000 personas</strong><small>Cotizar audio y video del DJ a 720p.</small></span>
+                        <b aria-hidden="true">→</b>
+                      </button>
+                      <button id="customQuoteOpen" class="custom-quote-open" type="button" aria-haspopup="dialog" aria-controls="customQuoteDialog">
+                        <span aria-hidden="true">＋</span>
+                        <span><strong>Aforo personalizado</strong><small>Escribe la cantidad de personas que necesitas.</small></span>
+                        <b aria-hidden="true">→</b>
+                      </button>
+                      <p id="creatorBillingStatus" class="form-status" role="status">Los bonos se reservan al crear y se consumen cuando comienza la transmisión.</p>
+                    </div>
+                  </details>
+
+                  <details id="roomTypePanel" class="creator-command room-type-selector" data-creator-command aria-labelledby="roomTypeSummaryLabel">
+                    <summary>
+                      <span class="creator-command-index" aria-hidden="true">02</span>
+                      <span class="creator-command-copy"><small>TIPO DE EXPERIENCIA</small><strong id="roomTypeSummaryLabel">Música</strong></span>
+                      <span id="roomTypeSummaryState" class="creator-command-state">Privada · 5 funciones</span>
+                      <i class="disclosure-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="creator-command-content room-type-command-content">
+                      <div class="room-type-picker">
+                        <span id="roomTypeLabel">¿Qué tipo de sesión quieres crear?</span>
+                        <select id="roomType" class="native-control-backup" tabindex="-1" aria-hidden="true">
+                          <option value="music" selected>Música</option>
+                          <option value="yoga-meditation">Yoga y meditación</option>
+                          <option value="conference">Conferencia</option>
+                          <option value="wedding">Boda</option>
+                          <option value="birthday">Cumpleaños</option>
+                          <option value="baby-shower">Baby shower</option>
+                          <option value="custom">Personalizada</option>
+                        </select>
+                        <div id="roomTypeControl" class="qsession-select">
+                          <button id="roomTypeTrigger" class="qsession-select-trigger" type="button" aria-haspopup="listbox" aria-expanded="false" aria-controls="roomTypeMenu" aria-labelledby="roomTypeLabel roomTypeTriggerLabel">
+                            <span class="qsession-select-symbol" aria-hidden="true">✦</span>
+                            <span><small>TIPO DE SESIÓN</small><strong id="roomTypeTriggerLabel">Música</strong></span>
+                            <i class="disclosure-chevron" aria-hidden="true"></i>
+                          </button>
+                          <div id="roomTypeMenu" class="qsession-select-menu" role="listbox" aria-labelledby="roomTypeLabel" hidden>
+                            <button type="button" role="option" data-room-type-value="music" aria-selected="true"><i aria-hidden="true">♪</i><span><strong>Música</strong><small>Sesiones, conciertos, fiestas y baile.</small></span></button>
+                            <button type="button" role="option" data-room-type-value="yoga-meditation" aria-selected="false"><i aria-hidden="true">♧</i><span><strong>Yoga y meditación</strong><small>Prácticas guiadas de movimiento y bienestar.</small></span></button>
+                            <button type="button" role="option" data-room-type-value="conference" aria-selected="false"><i aria-hidden="true">◫</i><span><strong>Conferencia</strong><small>Presentación y conexiones profesionales.</small></span></button>
+                            <button type="button" role="option" data-room-type-value="wedding" aria-selected="false"><i aria-hidden="true">♡</i><span><strong>Boda</strong><small>Comparte la ceremonia y la celebración.</small></span></button>
+                            <button type="button" role="option" data-room-type-value="birthday" aria-selected="false"><i aria-hidden="true">◌</i><span><strong>Cumpleaños</strong><small>Invitados, saludos y momentos en vivo.</small></span></button>
+                            <button type="button" role="option" data-room-type-value="baby-shower" aria-selected="false"><i aria-hidden="true">◇</i><span><strong>Baby shower</strong><small>Familia, amistades y detalles compartidos.</small></span></button>
+                            <button type="button" role="option" data-room-type-value="custom" aria-selected="false"><i aria-hidden="true">✦</i><span><strong>Personalizada</strong><small>Tú decides cada función.</small></span></button>
+                          </div>
+                        </div>
+                      </div>
+                      <div class="room-type-preview">
+                        <p id="roomTypePresetDescription">Configura libremente la privacidad y la participación.</p>
+                        <div id="roomTypeFeaturePreview" class="room-type-feature-preview" aria-label="Funciones sugeridas para este formato"></div>
+                      </div>
+                    </div>
+                  </details>
+                </div>
+                <div class="room-form-grid">
+                  <label for="roomName">¿Cómo se llama la sesión?
+                    <input id="roomName" maxlength="100" autocomplete="off" placeholder="Clase, evento o encuentro" required />
+                  </label>
+                  <label for="djName">¿Quién será el anfitrión?
+                    <input id="djName" maxlength="60" autocomplete="name" placeholder="Nombre del anfitrión" />
+                  </label>
+                </div>
+                <div class="room-config-stack">
+                  <details class="room-config-menu" data-room-config-menu>
+                    <summary>
+                      <span class="room-config-icon" aria-hidden="true">◎</span>
+                      <span class="room-config-copy"><b>Acceso e inicio</b><small>Privacidad, horario y formas de ingreso</small></span>
+                      <span id="roomAccessSummary" class="room-config-state">Privada · Ahora</span>
+                      <i class="disclosure-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="room-config-content">
+                      <fieldset class="room-visibility-selector">
+                        <legend>¿Quién puede encontrarla?</legend>
+                        <select id="roomVisibility" class="native-control-backup" tabindex="-1" aria-hidden="true">
+                          <option value="public">Pública: todos pueden verla</option>
+                          <option value="private" selected>Privada: solo con acceso compartido</option>
+                        </select>
+                        <div class="room-choice-row">
+                          <label><input type="radio" name="roomVisibilityChoice" value="public" /><span><b>Pública</b><small>Todos pueden verla y entrar.</small></span></label>
+                          <label><input type="radio" name="roomVisibilityChoice" value="private" checked /><span><b>Privada</b><small>Solo con acceso compartido.</small></span></label>
+                        </div>
+                        <div class="public-room-policy-notice"><span aria-hidden="true">♪</span><p><b>Contenido preparado para una audiencia pública.</b><small>Usa la biblioteca original de Qsession o música y material propios o debidamente autorizados. La sala aparecerá en el directorio cuando esté transmitiendo.</small></p></div>
+                      </fieldset>
+                      <fieldset class="room-start-options">
+                        <legend>¿Cuándo comienza?</legend>
+                        <div class="room-choice-row">
+                          <label><input type="radio" name="sessionStartMode" value="now" checked /><span><b>Ahora</b><small>Prepara la sala y transmite cuando quieras.</small></span></label>
+                          <label><input type="radio" name="sessionStartMode" value="scheduled" /><span><b>Programar</b><small>Define la fecha y la hora de apertura.</small></span></label>
+                        </div>
+                        <div id="scheduledStartField" class="scheduled-start-field" hidden>
+                          <div class="schedule-field-heading">
+                            <span><b>Elige el comienzo</b><small>La sala se abrirá en el momento indicado.</small></span>
+                            <div class="schedule-day-shortcuts" aria-label="Fechas rápidas">
+                              <button type="button" data-schedule-day-offset="0" aria-pressed="false">Hoy</button>
+                              <button type="button" data-schedule-day-offset="1" aria-pressed="false">Mañana</button>
+                            </div>
+                          </div>
+                          <input id="sessionScheduledAt" class="native-control-backup" type="datetime-local" tabindex="-1" aria-hidden="true" />
+                          <div class="schedule-date-time-grid">
+                            <label for="sessionScheduledDate"><span><i aria-hidden="true">▦</i><b>Día</b></span><input id="sessionScheduledDate" type="date" /></label>
+                            <label for="sessionScheduledTime"><span><i aria-hidden="true">◷</i><b>Hora</b></span><input id="sessionScheduledTime" type="time" step="300" /></label>
+                          </div>
+                          <p id="sessionSchedulePreview" class="schedule-preview" aria-live="polite"><i aria-hidden="true">✓</i><b>Selecciona un día y una hora.</b></p>
+                          <small id="sessionTimeZone">Usaremos la zona horaria de este dispositivo.</small>
+                        </div>
+                      </fieldset>
+                    <div class="room-form-grid">
+                      <label for="roomCapacity">Capacidad esperada
+                        <input id="roomCapacity" type="number" min="1" max="1000000" step="1" inputmode="numeric" placeholder="Ej. 500" />
+                        <small id="roomCapacityPlanHelp">Define cuántas personas esperas o el límite máximo de ingreso.</small>
+                      </label>
+                      <fieldset class="conference-config-block room-form-wide">
+                        <legend>Capacidad de la sala</legend>
+                        <div class="room-choice-row">
+                          <label><input type="radio" name="roomCapacityMode" value="expected" checked /><span><b>Estimación</b><small>Ayuda a planear, sin bloquear ingresos.</small></span></label>
+                          <label><input type="radio" name="roomCapacityMode" value="limited" /><span><b>Límite máximo</b><small>Cierra el ingreso al alcanzar la capacidad.</small></span></label>
+                        </div>
+                      </fieldset>
+                    </div>
+                    <label class="room-setting-toggle"><input id="roomPasswordEnabled" type="checkbox" /><span><b>Proteger con contraseña</b><small>Además del enlace o código, se pedirá esta clave.</small></span></label>
+                    <label id="roomPasswordField" class="room-password-field" for="roomPassword" hidden>Contraseña de la sesión
+                      <input id="roomPassword" type="password" minlength="6" maxlength="64" autocomplete="new-password" placeholder="Mínimo 6 caracteres" />
+                    </label>
+                    <fieldset class="conference-config-block">
+                      <legend>Formas de ingreso</legend>
+                      <p>Elige una o varias formas para compartir la conferencia.</p>
+                      <div class="room-permission-list">
+                        <label class="room-setting-toggle"><input id="allowJoinLink" type="checkbox" checked /><span><b>Enlace de invitación</b><small>Acceso directo desde un enlace compartido.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowJoinCode" type="checkbox" checked /><span><b>Código de sala</b><small>Ingreso escribiendo el código de seis caracteres.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowJoinQr" type="checkbox" checked /><span><b>Código QR</b><small>Ingreso escaneando el QR del evento.</small></span></label>
+                      </div>
+                    </fieldset>
+                    </div>
+                  </details>
+
+                  <details class="room-config-menu" data-room-config-menu>
+                    <summary>
+                      <span class="room-config-icon" aria-hidden="true">✦</span>
+                      <span class="room-config-copy"><b>Funciones de la sala</b><small>Chat, cámaras, perfiles y conexiones</small></span>
+                      <span id="roomFeaturesSummary" class="room-config-state">5 activas</span>
+                      <i class="disclosure-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="room-config-content">
+                      <div class="room-permission-list" role="group" aria-label="Funciones opcionales de la sesión">
+                        <label class="room-setting-toggle"><input id="allowRoomChat" type="checkbox" checked /><span><b>Chat</b><small>Los participantes con cuenta podrán escribir.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowGuestCameras" type="checkbox" checked /><span><b>Cámaras de usuarios</b><small>Cada persona decide si quiere aparecer.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowRoomSocialProfiles" type="checkbox" checked /><span><b>Perfiles visibles</b><small>Permite descubrir e interactuar con las personas de la sesión.</small></span></label>
+                        <label class="room-setting-toggle" data-room-social-dependent><input id="allowRoomMatchmaking" type="checkbox" checked /><span><b>Matchmaking abierto</b><small>Habilita disponibilidad y toques entre perfiles.</small></span></label>
+                        <label class="room-setting-toggle" data-room-social-dependent><input id="allowRoomProfileGifts" type="checkbox" checked /><span><b>Detalles</b><small>Permite enviar gestos simbólicos desde los perfiles.</small></span></label>
+                      </div>
+                    </div>
+                  </details>
+
+                  <details id="roomExperienceMenu" class="room-config-menu room-experience-menu" data-room-config-menu>
+                    <summary>
+                      <span class="room-config-icon" aria-hidden="true">◈</span>
+                      <span class="room-config-copy"><b>Experiencia y diseño</b><small>Identidad visual, IA, VJ y videos de participantes</small></span>
+                      <span id="roomExperienceSummary" class="room-config-state">Inmersiva · 3 herramientas</span>
+                      <i class="disclosure-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="room-config-content">
+                      <fieldset class="conference-config-block session-format-settings">
+                        <legend>Formato de la transmisión</legend>
+                        <p>Elige qué recibirá el público. Una sesión grabada puede durar hasta 4 horas.</p>
+                        <div class="room-choice-row session-format-choices">
+                          <label><input type="radio" name="broadcastMode" value="live" checked /><span><b>● En vivo</b><small>Audio y video en tiempo real.</small></span></label>
+                          <label><input type="radio" name="broadcastMode" value="recorded" /><span><b>▶ Video grabado</b><small>Sube una sesión preeditada.</small></span></label>
+                          <label><input type="radio" name="broadcastMode" value="image" /><span><b>▣ Imagen + audio</b><small>Una imagen fija con sonido.</small></span></label>
+                        </div>
+                        <div id="recordedSessionUpload" class="session-source-upload" hidden>
+                          <label class="room-promotion-upload"><input id="recordedSessionFile" type="file" accept="video/mp4,video/webm,video/quicktime" hidden /><span aria-hidden="true">＋</span><b>Subir video</b><small id="recordedSessionFileName">MP4, WebM o MOV · máximo 4 horas</small></label>
+                          <progress id="recordedSessionProgress" max="100" value="0" hidden></progress>
+                          <p id="recordedSessionStatus" class="form-status" role="status">El video quedará vinculado al perfil del DJ.</p>
+                        </div>
+                        <div id="imageSessionUpload" class="session-source-upload" hidden>
+                          <label for="sessionImageUrl">Imagen de la sesión<input id="sessionImageUrl" type="url" maxlength="800" placeholder="https://…/portada.jpg" /></label>
+                          <small>La imagen se mostrará mientras se transmite el audio.</small>
+                        </div>
+                      </fieldset>
+                      <fieldset class="conference-config-block session-star-price">
+                        <legend>Acceso en estrellas</legend>
+                        <div class="room-choice-row">
+                          <label><input type="radio" name="sessionPriceMode" value="free" checked /><span><b>Gratis</b><small>Cualquier persona con acceso puede entrar.</small></span></label>
+                          <label><input type="radio" name="sessionPriceMode" value="stars" /><span><b>★ Cobrar estrellas</b><small>El oyente desbloquea esta sesión.</small></span></label>
+                        </div>
+                        <label id="sessionStarPriceField" for="sessionStarPrice" hidden>Precio por persona
+                          <input id="sessionStarPrice" type="number" min="1" max="1000000" step="1" inputmode="numeric" value="10" />
+                          <small>El valor monetario y la participación del artista se administran por separado.</small>
+                        </label>
+                      </fieldset>
+                      <div id="roomExperienceIntro" class="room-experience-intro">
+                        <span aria-hidden="true">♪</span>
+                        <div><b>Música QSession</b><small>Una escena moderna y sobria, preparada para efectos creados con IA, visuales VJ y videos del público.</small></div>
+                      </div>
+                      <div class="room-form-grid room-design-grid">
+                        <label for="roomDesignTheme">Estilo visual
+                          <select id="roomDesignTheme">
+                            <option value="midnight" selected>QSession nocturno</option>
+                            <option value="serenity">Serenidad</option>
+                            <option value="institutional">Institucional</option>
+                            <option value="celebration">Celebración armónica</option>
+                            <option value="minimal">Minimalista</option>
+                          </select>
+                          <small>Define color, contraste y atmósfera de la sala.</small>
+                        </label>
+                        <label for="roomDesignMotion">Movimiento visual
+                          <select id="roomDesignMotion">
+                            <option value="calm">Calmo</option>
+                            <option value="balanced">Equilibrado</option>
+                            <option value="immersive" selected>Inmersivo</option>
+                          </select>
+                          <small>Controla la intensidad de fondos y transiciones.</small>
+                        </label>
+                      </div>
+                      <div class="room-permission-list room-experience-tools" role="group" aria-label="Herramientas de experiencia">
+                        <label class="room-setting-toggle" data-room-experience-tool="allowAiCameraEffects"><input id="allowAiCameraEffects" type="checkbox" checked /><span><b>Filtros, máscaras y disfraces con IA</b><small>Los usuarios describen o aportan patrones para crear su apariencia.</small></span></label>
+                        <label class="room-setting-toggle" data-room-experience-tool="allowVjVisuals"><input id="allowVjVisuals" type="checkbox" checked /><span><b>Efectos visuales VJ</b><small>Permite reemplazar la cámara por visuales sincronizados con la música.</small></span></label>
+                        <label class="room-setting-toggle" data-room-experience-tool="allowVideoSubmissions"><input id="allowVideoSubmissions" type="checkbox" checked /><span><b>Videos de participantes</b><small>Habilita el envío de videos al anfitrión o a la sala.</small></span></label>
+                        <label class="room-setting-toggle" data-room-experience-tool="allowGreetingVideos"><input id="allowGreetingVideos" type="checkbox" /><span><b>Videos de saludo</b><small>Identifica el video como felicitación o mensaje para la celebración.</small></span></label>
+                      </div>
+                      <fieldset id="roomVideoSubmissionOptions" class="conference-config-block room-video-options">
+                        <legend>Destino y privacidad de los videos</legend>
+                        <p>El anfitrión conserva el control antes de mostrar un video en la sala.</p>
+                        <div class="room-permission-list">
+                          <label class="room-setting-toggle" data-room-video-option><input id="allowVideoToHost" type="checkbox" checked /><span><b>Enviar al anfitrión</b><small>Entrega privada para revisión del DJ u organizador.</small></span></label>
+                          <label class="room-setting-toggle" data-room-video-option><input id="allowVideoToRoom" type="checkbox" checked /><span><b>Enviar a la sala</b><small>El participante puede proponerlo para el espacio público.</small></span></label>
+                          <label class="room-setting-toggle room-form-wide" data-room-video-option><input id="allowPrivateVideoSubmissions" type="checkbox" checked /><span><b>Permitir envío privado</b><small>El video sólo será visible para el anfitrión hasta que decida publicarlo.</small></span></label>
+                        </div>
+                      </fieldset>
+                    </div>
+                  </details>
+
+                  <details id="conferenceOptionsMenu" class="room-config-menu" data-room-config-menu hidden>
+                    <summary>
+                      <span class="room-config-icon" aria-hidden="true">◫</span>
+                      <span class="room-config-copy"><b>Herramientas de conferencia</b><small>Participación, traducción y moderación</small></span>
+                      <span id="conferenceToolsSummary" class="room-config-state">5 activas</span>
+                      <i class="disclosure-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="room-config-content">
+                      <fieldset id="conferenceFeatureSettings" class="conference-config-block">
+                      <legend>Herramientas de conferencia</legend>
+                      <p>Puedes habilitar sólo las funciones que necesita este evento.</p>
+                      <div class="room-permission-list">
+                        <label class="room-setting-toggle"><input id="allowSharedFiles" type="checkbox" checked /><span><b>Compartir archivos</b><small>Presentaciones, imágenes, videos y documentos.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowSpeakingQueue" type="checkbox" checked /><span><b>Turnos para hablar</b><small>Los oyentes levantan la mano y el moderador concede la palabra.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowQuestions" type="checkbox" checked /><span><b>Preguntas y respuestas</b><small>Preguntas ordenadas y moderadas durante la sesión.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowPolls" type="checkbox" checked /><span><b>Encuestas</b><small>Consultas rápidas con resultados en vivo.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowReactions" type="checkbox" checked /><span><b>Reacciones</b><small>Participación visual sin interrumpir al ponente.</small></span></label>
+                        <label class="room-setting-toggle"><input id="allowRecording" type="checkbox" /><span><b>Permitir grabación</b><small>Deja preparada la sala para grabar con consentimiento.</small></span></label>
+                      </div>
+                    </fieldset>
+                      <fieldset id="conferenceTranslationSettings" class="conference-config-block">
+                      <legend>Traducción de la conferencia</legend>
+                      <p>Elige cómo recibirán la conferencia las personas que hablan otro idioma.</p>
+                      <label class="conference-language-source" for="conferenceSourceLanguage">Idioma original del moderador
+                        <select id="conferenceSourceLanguage">
+                          <option value="es" selected>Español</option>
+                          <option value="en">English</option>
+                          <option value="de">Deutsch</option>
+                        </select>
+                      </label>
+                      <div class="room-choice-row translation-mode-choices">
+                        <label><input type="radio" name="conferenceTranslationMode" value="subtitles" checked /><span><b>Opción 1 · Audio original y subtítulos</b><small>Conserva la voz del moderador y traduce el texto en vivo.</small></span></label>
+                        <label><input type="radio" name="conferenceTranslationMode" value="audio" /><span><b>Opción 2 · Audio traducido en tiempo real</b><small>Crea una pista de voz traducida para cada idioma elegido.</small></span></label>
+                      </div>
+                      <div class="conference-language-targets" role="group" aria-label="Idiomas disponibles para traducción">
+                        <strong>Idiomas de traducción</strong>
+                        <div class="room-permission-list">
+                          <label class="room-setting-toggle"><input id="translateToSpanish" type="checkbox" data-translation-language="es" /><span><b>Español</b><small>Subtítulos o audio en español.</small></span></label>
+                          <label class="room-setting-toggle"><input id="translateToEnglish" type="checkbox" data-translation-language="en" checked /><span><b>English</b><small>English captions or audio.</small></span></label>
+                          <label class="room-setting-toggle"><input id="translateToGerman" type="checkbox" data-translation-language="de" checked /><span><b>Deutsch</b><small>Deutsche Untertitel oder Audio.</small></span></label>
+                        </div>
+                        <small id="conferenceTranslationHint">El idioma original no necesita otra pista de traducción.</small>
+                      </div>
+                      </fieldset>
+                    </div>
+                  </details>
+
+                  <details class="room-config-menu" data-room-config-menu>
+                    <summary>
+                      <span class="room-config-icon" aria-hidden="true">↗</span>
+                      <span class="room-config-copy"><b>Promociones</b><small>Patrocinadores, imágenes, videos y enlaces</small></span>
+                      <span id="roomPromotionSummary" class="room-config-state">Sin promociones</span>
+                      <i class="disclosure-chevron" aria-hidden="true"></i>
+                    </summary>
+                    <div class="room-config-content">
+                      <section class="room-promotion-editor" aria-labelledby="roomPromotionTitle">
+                        <header><span><b id="roomPromotionTitle">Patrocinadores y promociones</b><small>Agrega hasta ocho piezas comerciales.</small></span><i aria-hidden="true">↗</i></header>
+                        <div class="room-promotion-fields">
+                          <label for="promotionSponsor">Marca o patrocinador<input id="promotionSponsor" maxlength="80" autocomplete="organization" placeholder="Nombre de la marca" /></label>
+                          <label for="promotionHeadline">Mensaje promocional<input id="promotionHeadline" maxlength="140" autocomplete="off" placeholder="Oferta, producto o llamado a la acción" /></label>
+                          <label class="room-promotion-link" for="promotionLink">Enlace de venta o información (opcional)<input id="promotionLink" type="url" maxlength="800" inputmode="url" autocomplete="url" placeholder="www.marca.com/promocion" /></label>
+                        </div>
+                        <div class="room-promotion-actions">
+                          <label class="room-promotion-upload"><input id="promotionMediaInput" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" hidden /><span aria-hidden="true">＋</span><b>Imagen o video</b><small id="promotionMediaName">JPG, PNG, WebP, MP4, WebM o MOV · máximo 20 MB</small></label>
+                          <button id="addRoomPromotion" type="button">Agregar promoción <span>→</span></button>
+                        </div>
+                        <div id="roomPromotionDrafts" class="room-promotion-drafts" aria-live="polite"></div>
+                        <p id="roomPromotionStatus" class="form-status" role="status">Agrega la promoción y crea la sesión para publicarla. El enlace es opcional; puedes escribirlo con o sin https://.</p>
+                      </section>
+                    </div>
+                  </details>
+                </div>
+                <button class="wide-action" type="submit">Crear sesión <span>→</span></button>
+                <p id="createStatus" class="form-status" role="status">Podrás revisar la sala antes de iniciar la transmisión.</p>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section id="view-people" class="view" data-view-panel="people" aria-labelledby="peopleTitle" hidden>
+          <div class="view-heading"><p class="eyebrow">TU SALA AHORA</p><h1 id="peopleTitle">Personas activas en esta sala.</h1><p>Sólo aparecen perfiles visibles conectados a tu sesión actual. Al salir, desaparecen de este espacio.</p></div>
+          <div class="people-contact-strip">
+            <p><span aria-hidden="true">◎</span> Toca la imagen de una persona para conectar.</p>
+            <button id="peopleActivityButton" type="button"><span aria-hidden="true">✦</span> Actividad <b id="peopleActivityCount" hidden>0</b></button>
+          </div>
+          <div id="peopleViewControls" class="people-view-controls" aria-label="Opciones para ver Personas">
+            <div class="people-layout-switch" role="group" aria-label="Vista de Personas">
+              <button type="button" data-people-layout="scroll" aria-pressed="false"><span aria-hidden="true">☰</span> Scroll</button>
+              <button type="button" data-people-layout="mosaic" aria-pressed="true"><span aria-hidden="true">▦</span> Mosaico</button>
+            </div>
+            <button id="peopleNextGroup" class="people-next-group" type="button" disabled>Ver otro grupo ↻</button>
+            <span class="people-group-hint">Hasta 6 cámaras por grupo</span>
+            <p id="peopleVisibleCount" class="people-visible-count" aria-live="polite"></p>
+          </div>
+          <div id="peopleGrid" class="people-grid"><div class="empty-state"><img src="/icons/qsession-mark-contrast.png?v=20260911-brand-logo-v1" alt="" /><strong>Entra a una sala para ver quién está activo</strong><span>Personas sólo muestra los perfiles presentes en tu sesión actual.</span></div></div>
+        </section>
+
+        <section id="view-chat" class="view" data-view-panel="chat" aria-labelledby="chatTitle" hidden>
+          <div class="view-heading chat-heading"><p class="eyebrow">✦ CHAT</p><h1 id="chatTitle">Conversaciones</h1></div>
+
+          <div id="chatIdentityGate" class="protected-feature"><div class="feature-orbit"><img src="/icons/qsession-mark-light.png?v=20260911-brand-logo-v1" alt="" /></div><div><strong>El chat necesita una identidad</strong><p>Inicia sesión para que tus conversaciones pertenezcan a tu cuenta Q Session.</p><button type="button" data-view="profile">Iniciar sesión</button></div></div>
+
+          <div id="chatPermissionGate" class="protected-feature permission-feature" hidden><div class="feature-orbit"><span id="chatPermissionInitial">Q</span></div><div><strong>Tu cuenta está conectada</strong><p>Sólo falta tu autorización para recibir y enviar mensajes. Puedes cambiar esta decisión cuando quieras.</p><button id="enableMessagesButton" type="button">Activar mensajes</button><p id="chatPermissionStatus" class="chat-gate-status" role="status"></p></div></div>
+
+          <div id="chatReady" class="chat-ready" hidden>
+            <div id="chatContextStrip" class="chat-account-strip"><span id="chatIdentityInitial">Q</span><div><small id="chatContextLabel">TUS CONVERSACIONES</small><strong id="chatIdentityName">Mi perfil</strong><p id="chatIdentityPrivacy">Tu identidad está conectada.</p></div></div>
+
+            <nav id="chatModeMenu" class="chat-mode-menu" aria-label="Tipo de conversación">
+              <span id="chatModeCurrentLabel" class="sr-only">Chat privado</span>
+              <span id="chatModeCurrentHint" class="sr-only">Uno a uno</span>
+              <div class="chat-mode-tabs" role="tablist" aria-label="Opciones de chat">
+                <button id="privateChatTab" type="button" role="tab" data-chat-mode="private" aria-controls="privateChatPanel" aria-pressed="true"><span aria-hidden="true">●</span><strong>Chat privado</strong></button>
+                <button id="groupChatShortcut" type="button" role="tab" data-chat-mode="group" aria-controls="privateChatPanel" aria-pressed="false"><span aria-hidden="true">◎</span><strong>Chat grupal</strong></button>
+                <button id="publicChatTab" type="button" role="tab" data-chat-mode="public" aria-controls="publicChatPanel" aria-pressed="false"><span id="publicChatTabStatus" aria-hidden="true">◈</span><strong>Chat de la sala</strong></button>
+              </div>
+            </nav>
+
+            <div id="privateChatPanel" class="chat-shell private-chat-shell" role="region" aria-labelledby="privateChatTab">
+              <aside class="chat-sidebar private-chat-sidebar">
+                <div class="private-chat-intro"><span id="privateChatSectionEyebrow" class="eyebrow">PRIVADO</span><h2 id="privateChatSectionTitle">Tus conversaciones</h2></div>
+                <div class="private-chat-quick-actions" aria-label="Crear una conversación">
+                  <button id="newDirectChat" type="button"><span aria-hidden="true">＋</span><strong>Nueva conversación</strong></button>
+                  <button id="newGroupChat" type="button" hidden><span aria-hidden="true">◎</span><strong>Nuevo grupo</strong></button>
+                  <button id="privateContactInvite" class="private-contact-invite-button" type="button"><span aria-hidden="true">⌗</span><strong>Enlace, código o QR</strong></button>
+                </div>
+                <div id="privateConversationList" class="private-conversation-list" aria-label="Conversaciones privadas"><p>Aún no tienes conversaciones privadas.</p></div>
+              </aside>
+
+              <section class="chat-conversation" aria-label="Conversación privada">
+                <div id="privateChatEmpty" class="chat-empty private-chat-empty">
+                  <img src="/icons/qsession-mark-contrast.png?v=20260911-brand-logo-v1" alt="" />
+                  <strong>Tu espacio privado</strong>
+                  <span>Elige una conversación o crea una nueva. Aquí quedan tus mensajes, fotos, videos e interacciones.</span>
+                  <button id="privateChatEmptyAction" type="button">Iniciar chat privado</button>
+                </div>
+                <div id="privateChatConversation" class="chat-conversation-active private-conversation-active" hidden>
+                  <header class="chat-conversation-header"><div class="private-chat-header-main"><button id="privateChatMobileBack" class="private-chat-mobile-back" type="button" aria-label="Volver a las conversaciones">‹</button><div><span><i class="pulse-dot"></i> CONVERSACIÓN PRIVADA</span><h2 id="activePrivateChatName">Chat privado</h2><p id="activePrivateChatMembers">2 personas</p></div></div><div class="private-chat-header-actions"><button id="privateChatProfileButton" class="private-chat-profile-button" type="button" hidden>Ver perfil</button><button id="refreshPrivateChatButton" type="button" aria-label="Actualizar mensajes privados">↻</button></div></header>
+                  <section id="privateVoicePanel" class="private-voice-panel" aria-labelledby="privateVoiceTitle">
+                    <div class="private-voice-heading"><div><span>AUDIO Y VIDEO</span><strong id="privateVoiceTitle">Llamada privada</strong><small id="privateVoicePeople">Nadie conectado todavía</small></div><button id="joinPrivateVoice" type="button">Entrar</button></div>
+                    <div id="privateCallVideoGrid" class="private-call-video-grid" aria-label="Cámaras de la llamada" hidden></div>
+                    <details id="privateVoiceControlsMenu" class="chat-control-menu private-voice-controls-menu">
+                      <summary><span class="chat-control-icon" aria-hidden="true">◉</span><span><strong>Cámara y micrófono</strong><small id="privateVoiceControlSummary">Controles de llamada</small></span><i class="disclosure-chevron" aria-hidden="true"></i></summary>
+                      <div class="chat-control-content">
+                        <div class="private-voice-actions">
+                          <button id="togglePrivateCamera" type="button" disabled>Encender cámara</button>
+                          <button id="mutePrivateMic" type="button" disabled>Silenciar</button>
+                          <button id="togglePrivateOpenMic" type="button" disabled>Micrófono abierto</button>
+                          <button id="privatePushToTalk" type="button" disabled>🎙 Pulsar para hablar</button>
+                          <button id="leavePrivateVoice" class="private-call-leave" type="button" disabled>Salir de la llamada</button>
+                        </div>
+                        <label id="privateCallZoomControl" class="private-call-zoom" hidden><span>Encuadre</span><input id="privateCallZoom" type="range" min="0" max="100" value="0" step="1" /><output id="privateCallZoomValue">Gran angular</output></label>
+                        <details class="private-filter-builder">
+                          <summary><span class="private-filter-label">Filtro o disfraz</span><span>Beta</span><i class="disclosure-chevron" aria-hidden="true"></i></summary>
+                          <div><label><span>Describe tu idea</span><input id="privateFilterPrompt" maxlength="180" placeholder="Ej. halo azul que aparece cuando bailo" /></label><label><span>¿Cuándo se activa?</span><select id="privateFilterTrigger"><option value="always">Siempre</option><option value="movement">Cuando me muevo</option><option value="dance">Cuando bailo</option></select></label><button id="preparePrivateFilter" type="button">Preparar efecto</button><button id="clearPrivateFilter" type="button">Natural</button></div>
+                          <small id="privateFilterStatus">Se aplica únicamente en tu dispositivo.</small>
+                        </details>
+                      </div>
+                    </details>
+                    <p id="privateVoiceStatus" role="status">La llamada está cerrada hasta que decidas entrar.</p>
+                    <div id="privateVoiceAudioRack" hidden></div>
+                  </section>
+                  <button id="loadEarlierPrivateMessages" class="chat-history-button" type="button" hidden>Mostrar mensajes anteriores</button>
+                  <div id="privateChatMessages" class="chat-messages" aria-live="polite"><div class="chat-message-empty">Todavía no hay mensajes privados.</div></div>
+                  <div class="chat-reactions qmoji-bar" data-qmoji-scope="private" aria-label="Qmojis privados">
+                    <div class="qmoji-favorites" data-qmoji-favorites="private"></div>
+                    <button class="qmoji-picker-trigger" type="button" data-qmoji-open="private" aria-expanded="false"><span>＋</span><strong>50</strong><small>Qmojis</small></button>
+                    <section class="qmoji-picker" data-qmoji-picker="private" aria-label="Colección de Qmojis" hidden>
+                      <header><div><strong>Qmojis</strong><small>50 reacciones originales de Q Session</small></div><button type="button" data-qmoji-close="private" aria-label="Cerrar Qmojis">×</button></header>
+                      <label class="qmoji-search"><span aria-hidden="true">⌕</span><input type="search" data-qmoji-search="private" autocomplete="off" placeholder="Buscar una emoción" /></label>
+                      <div class="qmoji-grid" data-qmoji-grid="private"></div>
+                    </section>
+                  </div>
+                  <form id="privateChatMessageForm" class="chat-composer private-chat-composer"><label class="chat-attachment-button" title="Adjuntar foto o video"><input id="privateChatAttachmentInput" type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/webm,video/quicktime" /><span aria-hidden="true">＋</span><span class="sr-only">Adjuntar foto o video</span></label><input id="privateChatMessageInput" maxlength="600" autocomplete="off" placeholder="Mensaje privado…" aria-label="Mensaje privado" /><button type="submit">Enviar</button></form>
+                  <p id="privateChatMessageStatus" class="form-status" role="status"></p>
+                  <details class="chat-info-menu"><summary>Privacidad y archivos <i class="disclosure-chevron" aria-hidden="true"></i></summary><p class="chat-safety">Mensajes y archivos permanecen disponibles solamente para los integrantes.</p></details>
+                </div>
+              </section>
+            </div>
+
+            <div id="publicChatPanel" class="chat-shell" role="region" aria-labelledby="publicChatTab" hidden>
+              <aside class="chat-sidebar">
+                <div class="chat-current-room">
+                  <span class="eyebrow">CHAT PÚBLICO</span>
+                  <h2 id="publicChatRoomName">Sala activa</h2>
+                  <p id="publicChatRoomMeta">El chat sigue automáticamente la sesión en la que estás.</p>
+                  <div id="publicChatRoomStatus" class="chat-current-room-status"><i class="pulse-dot"></i><span id="publicChatPresence">Activo ahora</span></div>
+                </div>
+                <section class="public-chat-directory" aria-labelledby="publicChatDirectoryTitle">
+                  <header>
+                    <div><span>EN LÍNEA AHORA</span><strong id="publicChatDirectoryTitle">Personas y contactos</strong></div>
+                    <button id="refreshPublicChatPeople" type="button" aria-label="Actualizar personas conectadas">↻</button>
+                  </header>
+                  <label class="public-chat-search" for="publicChatPeopleSearch"><span aria-hidden="true">⌕</span><input id="publicChatPeopleSearch" type="search" autocomplete="off" placeholder="Buscar nombre o contacto" /></label>
+                  <p id="publicChatPeopleCount" class="public-chat-people-count" aria-live="polite">Nadie conectado todavía</p>
+                  <div id="publicChatPeopleList" class="public-chat-people-list" aria-label="Personas activas y contactos"><p>Entra a la sala para ver quién está conectado.</p></div>
+                  <details class="public-chat-invite-menu">
+                    <summary><span aria-hidden="true">↗</span><strong>Invitar al chat</strong><i class="disclosure-chevron" aria-hidden="true"></i></summary>
+                    <div class="public-chat-invite-actions" aria-label="Invitar al chat">
+                      <button id="copyChatInviteLink" type="button"><span aria-hidden="true">⌁</span><small>Enlace</small></button>
+                      <button id="showChatInviteQr" type="button"><span aria-hidden="true">▦</span><small>QR</small></button>
+                      <button id="focusChatInviteContact" type="button"><span aria-hidden="true">＋</span><small>Plataforma</small></button>
+                    </div>
+                    <p id="publicChatDirectoryStatus" class="public-chat-directory-status" role="status"></p>
+                  </details>
+                </section>
+              </aside>
+
+              <section class="chat-conversation" aria-label="Chat público de la sala">
+                <div id="chatNoRoom" class="chat-empty">
+                  <img src="/icons/qsession-mark-contrast.png?v=20260911-brand-logo-v1" alt="" />
+                  <strong id="chatNoRoomTitle">Primero entra a una sala</strong>
+                  <span id="chatNoRoomText">El chat se activa únicamente mientras estás conectado a una sesión en vivo.</span>
+                  <button type="button" data-view="live">Ir a En vivo</button>
+                </div>
+                <div id="chatDisabledRoom" class="chat-empty" hidden>
+                  <img src="/icons/qsession-mark-contrast.png?v=20260911-brand-logo-v1" alt="" />
+                  <strong>Chat público desactivado</strong>
+                  <span>El anfitrión decidió mantener esta sesión sin conversación pública.</span>
+                </div>
+                <div id="chatConversation" class="chat-conversation-active" hidden>
+                  <header class="chat-conversation-header"><div><span><i class="pulse-dot"></i> SALA <b id="activeChatCode">——</b></span><h2 id="activeChatName">Sesión Q Session</h2></div><button id="refreshChatButton" type="button" aria-label="Actualizar mensajes">↻</button></header>
+                  <details class="public-chat-call chat-control-menu" aria-label="Audio del chat de la sala">
+                    <summary><span class="chat-control-icon" aria-hidden="true">♪</span><span><strong>Audio de la sala</strong><small id="publicChatAudioSummary">Micrófono silenciado</small></span><i class="disclosure-chevron" aria-hidden="true"></i></summary>
+                    <div class="chat-control-content">
+                      <div class="public-chat-call-actions">
+                        <button id="mutePublicChatMic" type="button" class="is-active">Silenciar</button>
+                        <button id="openPublicChatMic" type="button">Micrófono abierto</button>
+                        <button id="publicChatPushToTalk" type="button">🎙 Pulsar para hablar</button>
+                      </div>
+                      <p id="publicChatCallStatus" role="status">Sólo audio; la cámara no está disponible en la sala general.</p>
+                    </div>
+                  </details>
+                  <div id="chatMessages" class="chat-messages" aria-live="polite"><div class="chat-message-empty">Todavía no hay mensajes. Puedes ser el primero.</div></div>
+                  <div class="chat-reactions qmoji-bar" data-qmoji-scope="public" aria-label="Qmojis para la sala">
+                    <div class="qmoji-favorites" data-qmoji-favorites="public"></div>
+                    <button class="qmoji-picker-trigger" type="button" data-qmoji-open="public" aria-expanded="false"><span>＋</span><strong>50</strong><small>Qmojis</small></button>
+                    <section class="qmoji-picker" data-qmoji-picker="public" aria-label="Colección de Qmojis" hidden>
+                      <header><div><strong>Qmojis</strong><small>50 reacciones originales de Q Session</small></div><button type="button" data-qmoji-close="public" aria-label="Cerrar Qmojis">×</button></header>
+                      <label class="qmoji-search"><span aria-hidden="true">⌕</span><input type="search" data-qmoji-search="public" autocomplete="off" placeholder="Buscar una emoción" /></label>
+                      <div class="qmoji-grid" data-qmoji-grid="public"></div>
+                    </section>
+                  </div>
+                  <form id="chatMessageForm" class="chat-composer"><input id="chatMessageInput" maxlength="600" autocomplete="off" placeholder="Escribe en la sala…" aria-label="Mensaje para la sala" /><button type="submit">Enviar</button></form>
+                  <p id="chatMessageStatus" class="form-status" role="status"></p>
+                </div>
+              </section>
+            </div>
+          </div>
+
+          <dialog id="privateChatDialog" class="q-dialog private-chat-dialog">
+            <form id="createPrivateChatForm" method="dialog">
+              <header><div><p class="eyebrow">NUEVA CONVERSACIÓN</p><h2 id="privateChatDialogTitle">Chat uno a uno</h2></div><button id="closePrivateChatDialog" type="button" aria-label="Cerrar">×</button></header>
+              <div class="private-chat-kind" role="group" aria-label="Tipo de conversación">
+                <button type="button" data-private-chat-kind="direct" aria-pressed="true">Uno a uno</button>
+                <button type="button" data-private-chat-kind="group" aria-pressed="false">Grupo privado</button>
+              </div>
+              <label id="privateGroupNameField" class="private-group-name" hidden><span>Nombre del grupo</span><input id="privateGroupName" maxlength="80" placeholder="Ej. Amigos de la sesión" /></label>
+              <fieldset><legend id="privateContactLegend">Elige una persona</legend><div id="privateContactList" class="private-contact-list"><p>Cargando personas disponibles…</p></div></fieldset>
+              <p id="privateChatCreateStatus" class="form-status" role="status"></p>
+              <footer><button id="cancelPrivateChatDialog" type="button">Cancelar</button><button id="createPrivateChatButton" type="submit">Crear chat privado</button></footer>
+            </form>
+          </dialog>
+
+          <dialog id="privateContactInviteDialog" class="q-dialog private-contact-invite-dialog" aria-labelledby="privateContactInviteTitle">
+            <div class="private-contact-invite-sheet">
+              <header><div><p class="eyebrow">CONTACTO PRIVADO</p><h2 id="privateContactInviteTitle">Conectarse sin publicar el perfil</h2></div><button id="closePrivateContactInvite" type="button" aria-label="Cerrar">&times;</button></header>
+              <p class="private-contact-invite-intro">Los perfiles privados no aparecen en Personas. Para iniciar el primer chat, comparte o acepta una invitación segura.</p>
+              <section class="private-contact-invite-create" aria-labelledby="privateContactShareTitle">
+                <div><small>MI INVITACIÓN</small><strong id="privateContactShareTitle">Crear acceso para una persona</strong><p>El código dura 24 horas y se usa una sola vez.</p></div>
+                <button id="createPrivateContactInvite" type="button">Generar invitación</button>
+              </section>
+              <section id="privateContactInviteResult" class="private-contact-invite-result" hidden>
+                <div id="privateContactInviteQr" class="chat-invite-qr" aria-label="Código QR para aceptar el contacto privado"></div>
+                <div class="private-contact-invite-code"><span>CÓDIGO PRIVADO</span><strong id="privateContactInviteCode">--------</strong><small id="privateContactInviteExpiry">Válido durante 24 horas</small></div>
+                <label class="chat-invite-link"><span>Enlace de invitación</span><input id="privateContactInviteLink" type="text" readonly /></label>
+                <div class="private-contact-invite-share-actions"><button id="copyPrivateContactCode" type="button">Copiar código</button><button id="copyPrivateContactLink" type="button">Copiar enlace</button><button id="sharePrivateContactInvite" type="button">Compartir</button></div>
+              </section>
+              <form id="redeemPrivateContactInviteForm" class="private-contact-invite-redeem">
+                <div><small>ACEPTAR INVITACIÓN</small><strong>Escribe el código que recibiste</strong></div>
+                <label><span class="sr-only">Código privado de ocho caracteres</span><input id="privateContactInviteInput" maxlength="8" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="ABCD2345" /></label>
+                <button type="submit">Conectar</button>
+                <button id="scanPrivateContactInvite" type="button">Escanear QR</button>
+              </form>
+              <p id="privateContactInviteStatus" class="form-status" role="status"></p>
+            </div>
+          </dialog>
+
+          <dialog id="chatInviteDialog" class="q-dialog chat-invite-dialog" aria-labelledby="chatInviteDialogTitle">
+            <div class="chat-invite-sheet">
+              <header><div><p class="eyebrow">INVITACIÓN AL CHAT</p><h2 id="chatInviteDialogTitle">Entrar a la conversación</h2></div><button id="closeChatInviteDialog" type="button" aria-label="Cerrar">×</button></header>
+              <p>El enlace y el QR abren la sala. El chat se activa cuando la persona se conecta.</p>
+              <div id="chatInviteQr" class="chat-invite-qr" aria-label="Código QR para entrar al chat"></div>
+              <div class="chat-invite-room"><span>SALA</span><strong id="chatInviteRoomCode">——</strong><small id="chatInviteRoomName">Sesión Q Session</small></div>
+              <label class="chat-invite-link"><span>Enlace de invitación</span><input id="chatInviteLink" type="text" readonly /></label>
+              <footer><button id="copyChatInviteDialogLink" type="button">Copiar enlace</button><button id="shareChatInvite" type="button">Compartir invitación</button></footer>
+            </div>
+          </dialog>
+        </section>
+
+        <section id="view-vision" class="view vision-view" data-view-panel="vision" aria-labelledby="visionTitle" hidden>
+          <div class="vision-page">
+            <section class="vision-hero">
+              <div class="vision-hero-copy">
+                <p class="eyebrow">NUESTRA VISIÓN</p>
+                <h1 id="visionTitle">Baila, libera y conecta.</h1>
+                <p class="vision-hero-lead">Usa el baile como terapia.</p>
+                <p class="vision-hero-story">Una misma señal de audio puede atravesar fronteras y reunir al mundo en un solo movimiento.</p>
+                <div class="vision-audio-signal"><i aria-hidden="true">≋</i><span><strong>AUDIO GLOBAL EN VIVO</strong><small>UNA SEÑAL · MUCHOS LUGARES · UN MISMO LATIDO</small></span></div>
+              </div>
+              <div class="vision-world" role="img" aria-label="Una señal de audio conecta personas alrededor del mundo por Q Session">
+                <svg class="vision-world-map" viewBox="0 0 1000 500" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="visionWorldLand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#d9fbff"/><stop offset=".52" stop-color="#73cbd8"/><stop offset="1" stop-color="#2e7095"/></linearGradient>
+                    <radialGradient id="visionAudioPulse"><stop offset="0" stop-color="#ffffff"/><stop offset=".22" stop-color="#8ff6ef"/><stop offset="1" stop-color="#57cbd2" stop-opacity="0"/></radialGradient>
+                    <filter id="visionAudioGlow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                  </defs>
+                  <g class="vision-world-grid"><path d="M0 125H1000M0 250H1000M0 375H1000M250 0V500M500 0V500M750 0V500"/></g>
+                  <g class="vision-world-fallback" aria-hidden="true">
+                    <path d="M54 112L103 74l78-38 100 12 52 42-25 45-44 14-31 48-62 9-25-29-52-13-40-52Z"/>
+                    <path d="M247 217l68 12 48 47-8 68-35 82-29 35-17-64-26-76-22-54 21-50Z"/>
+                    <path d="M397 65l41-29 48 8-9 45-47 19-33-43Z"/>
+                    <path d="M451 133l59-30 76 15 34 42-29 27 19 53-23 94-44 70-34-54-5-80-43-34-46-56 36-47Z"/>
+                    <path d="M553 113l79-55 122-18 111 42 80 64-22 62-76 7-42 39-64-4-43-38-73 8-34-33 29-27-67-47Z"/>
+                    <path d="M789 335l64-33 72 25 20 55-49 43-82-14-25-76Z"/>
+                  </g>
+                  <g id="visionWorldCountries" class="vision-world-countries"></g>
+                  <g class="vision-audio-routes">
+                    <path d="M305 270Q285 205 285 150"/><path d="M305 270Q392 142 500 145"/><path d="M305 270Q298 330 315 390"/>
+                    <path d="M285 150Q392 82 500 145"/><path d="M500 145Q608 112 690 230"/><path d="M500 145Q505 214 515 265"/>
+                    <path d="M515 265Q520 326 560 355"/><path d="M690 230Q778 118 850 170"/><path d="M850 170Q902 267 850 365"/>
+                  </g>
+                  <g class="vision-audio-nodes">
+                    <g class="vision-audio-node is-origin" transform="translate(305 270)"><circle class="pulse pulse-1" r="28"/><circle class="pulse pulse-2" r="17"/><circle class="core" r="5"/></g>
+                    <g class="vision-audio-node" transform="translate(285 150)"><circle class="pulse" r="16"/><circle class="core" r="4"/></g>
+                    <g class="vision-audio-node" transform="translate(315 390)"><circle class="pulse" r="16"/><circle class="core" r="4"/></g>
+                    <g class="vision-audio-node" transform="translate(500 145)"><circle class="pulse" r="18"/><circle class="core" r="4"/></g>
+                    <g class="vision-audio-node" transform="translate(515 265)"><circle class="pulse" r="15"/><circle class="core" r="4"/></g>
+                    <g class="vision-audio-node" transform="translate(560 355)"><circle class="pulse" r="15"/><circle class="core" r="4"/></g>
+                    <g class="vision-audio-node" transform="translate(690 230)"><circle class="pulse" r="18"/><circle class="core" r="4"/></g>
+                    <g class="vision-audio-node" transform="translate(850 170)"><circle class="pulse" r="16"/><circle class="core" r="4"/></g>
+                    <g class="vision-audio-node" transform="translate(850 365)"><circle class="pulse" r="18"/><circle class="core" r="4"/></g>
+                  </g>
+                  <path class="vision-audio-waveform" d="M92 447h32l8-10 10 22 13-39 14 55 13-33 9 14 13-9h30l10-12 12 22 14-41 15 60 14-38 12 19 10-10h40l9-8 10 16 11-27 12 43 13-34 11 18 11-8h47l9-11 11 21 13-40 14 58 15-36 12 18 10-10h42l10-8 11 16 12-25 13 40 12-29 11 14 11-8h51"/>
+                </svg>
+                <div class="vision-world-caption"><span class="vision-live-dot" aria-hidden="true"></span><span><strong>EL MUNDO EN UNA MISMA FRECUENCIA</strong><small>Audio que viaja. Cuerpos que se mueven. Energía que conecta.</small></span></div>
+              </div>
+            </section>
+
+            <section class="vision-principles" aria-label="Dimensiones de nuestra visión">
+              <article><i aria-hidden="true">◎</i><div><h2>Rave global</h2><p>Personas de todo el mundo bailando juntas.</p></div></article>
+              <article><i aria-hidden="true">♡</i><div><h2>Baile y liberación</h2><p>El movimiento como terapia para una vida más plena.</p></div></article>
+              <article><i aria-hidden="true">◌</i><div><h2>Energía que se comparte</h2><p>La energía del baile nos conecta y nos transforma.</p></div></article>
+              <article><i aria-hidden="true">⌁</i><div><h2>Amor a la Tierra</h2><p>Un baile global por un planeta más consciente.</p></div></article>
+            </section>
+
+            <section class="vision-technology" aria-labelledby="visionTechnologyTitle">
+              <div class="vision-section-copy">
+                <p class="eyebrow">UNA PLATAFORMA · UNA SEÑAL · MUCHAS PERSONAS</p>
+                <h2 id="visionTechnologyTitle">Una persona transmite. Todos lo viven.</h2>
+                <p>Q Session toma la señal del DJ, profesor u organizador y la entrega en vivo a cada invitado, esté donde esté.</p>
+                <ol class="vision-platform-steps" aria-label="Cómo funciona Q Session">
+                  <li><span>01</span><div><b>Crea una sala</b><small>Define la experiencia y sus permisos.</small></div></li>
+                  <li><span>02</span><div><b>Comparte el acceso</b><small>Invita por enlace, código o QR.</small></div></li>
+                  <li><span>03</span><div><b>Transmite en vivo</b><small>Audio y video llegan sincronizados.</small></div></li>
+                </ol>
+                <div class="vision-technology-note"><span aria-hidden="true"></span><strong>Una sala. Una señal. Todas las pantallas.</strong></div>
+              </div>
+
+              <div class="vision-system-map" role="img" aria-label="Un anfitrión transmite a Q Session y la plataforma distribuye la experiencia en vivo a cada persona y dispositivo">
+                <header class="vision-system-header">
+                  <span><i aria-hidden="true"></i> ASÍ FUNCIONA Q SESSION</span>
+                  <small>EN VIVO</small>
+                </header>
+                <div class="vision-system-stage">
+                  <article class="vision-system-source">
+                    <small>01 · ORIGEN</small>
+                    <span class="vision-system-icon">
+                      <svg viewBox="0 0 40 40" aria-hidden="true"><path d="M5 21h5l3-8 5 16 5-21 5 25 4-12h3"/></svg>
+                    </span>
+                    <strong>DJ · Profesor · Anfitrión</strong>
+                    <p>Envía una sola señal.</p>
+                  </article>
+
+                  <div class="vision-system-link" aria-hidden="true"><span></span><small>Audio + video</small></div>
+
+                  <div class="vision-system-hub" aria-hidden="true">
+                    <span class="vision-system-pulse pulse-one"></span>
+                    <span class="vision-system-pulse pulse-two"></span>
+                    <b>Q</b>
+                    <strong>Q SESSION</strong>
+                    <small>DISTRIBUYE</small>
+                  </div>
+
+                  <div class="vision-system-link" aria-hidden="true"><span></span><small>Tiempo real</small></div>
+
+                  <section class="vision-system-receivers">
+                    <header><span>02 · PERSONAS</span><small>Cada una recibe la sesión</small></header>
+                    <div>
+                      <article><span class="vision-system-icon"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="12" y="5" width="16" height="30" rx="3"/><path d="M17 9h6M19 31h2"/></svg></span><b>Teléfono</b></article>
+                      <article><span class="vision-system-icon"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="8" y="7" width="24" height="19" rx="2"/><path d="M4 31h32l-3-5H7z"/></svg></span><b>Computadora</b></article>
+                      <article><span class="vision-system-icon"><svg viewBox="0 0 40 40" aria-hidden="true"><rect x="5" y="7" width="30" height="21" rx="3"/><path d="M15 34h10M20 28v6"/></svg></span><b>Pantalla</b></article>
+                      <article><span class="vision-system-icon"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M8 23v-5a12 12 0 0 1 24 0v5M8 22h5v10H9a3 3 0 0 1-3-3v-4a3 3 0 0 1 2-3Zm24 0h-5v10h4a3 3 0 0 0 3-3v-4a3 3 0 0 0-2-3Z"/></svg></span><b>Solo audio</b></article>
+                    </div>
+                  </section>
+                </div>
+                <footer class="vision-system-footer"><span>01 ORIGEN</span><span>01 SALA</span><span>MUCHOS DESTINOS</span></footer>
+              </div>
+            </section>
+
+            <section class="vision-uses" aria-labelledby="visionUsesTitle">
+              <header>
+                <p class="eyebrow">MUCHO MÁS QUE UNA FIESTA</p>
+                <h2 id="visionUsesTitle">Una plataforma para encuentros que necesitan sentirse presentes.</h2>
+              </header>
+              <div class="vision-use-grid">
+                <article><i aria-hidden="true">▣</i><div><h3>Sesiones privadas</h3><p>Comparte una experiencia íntima en tiempo real.</p></div></article>
+                <article><i aria-hidden="true">◌</i><div><h3>Grupos y comunidades</h3><p>Reúne personas alrededor de un propósito común.</p></div></article>
+                <article><i aria-hidden="true">♧</i><div><h3>Yoga y meditación</h3><p>Guía prácticas audiovisuales desde cualquier lugar.</p></div></article>
+                <article><i aria-hidden="true">♡</i><div><h3>Bodas y celebraciones</h3><p>Conecta a quienes no pueden estar físicamente.</p></div></article>
+                <article><i aria-hidden="true">▤</i><div><h3>Conferencias</h3><p>Transmite ideas con participación en vivo.</p></div></article>
+                <article><i aria-hidden="true">◎</i><div><h3>Rave global</h3><p>Un mismo baile conectando países y culturas.</p></div></article>
+              </div>
+            </section>
+
+            <section class="vision-manifesto" aria-labelledby="visionManifestoTitle">
+              <img src="/images/qsession-world-network.webp" alt="" />
+              <div>
+                <h2 id="visionManifestoTitle">Q Session es infraestructura para compartir presencia.</h2>
+                <p>No es solamente una fiesta. Es una herramienta para que las personas escuchen, vean y vivan juntas una experiencia en tiempo real.</p>
+                <span>Tecnología al servicio de la conexión humana.</span>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section id="view-global" class="view" data-view-panel="global" aria-labelledby="globalTitle" hidden>
+          <div class="global-stage">
+            <div class="global-copy">
+              <div class="global-copy-message">
+                <p class="eyebrow">PRESENCIA REAL Y CONSENTIDA</p>
+                <h1 id="globalTitle">Baila, libera y conecta.</h1>
+                <p>Usa el baile como terapia.</p>
+                <p>Explora cada país. Los que tienen presencia consentida se iluminan y muestran solamente nombres públicos, sin ciudad, coordenadas ni ubicación exacta.</p>
+              </div>
+              <div class="global-copy-overview">
+                <div class="global-metrics"><span><strong id="globalRavePeople">0</strong> personas conectadas ahora</span><span><strong id="globalRaveCountryCount">0</strong> países activos</span></div>
+                <div class="global-share-country">
+                  <div>
+                    <strong>Haz visible tu país en Global Rave</strong>
+                    <span id="globalShareCountryStatus">Solo con tu perfil público y GPS confirmado. Se comparte el país, nunca las coordenadas.</span>
+                  </div>
+                  <div class="global-country-actions"><button id="shareGlobalCountry" type="button"><span aria-hidden="true">◎</span> Compartir mi país</button><button id="useAccountGpsCountry" type="button">Usar GPS de mi cuenta</button></div>
+                </div>
+                <p id="globalRaveStatus" class="global-rave-status" role="status">Buscando presencias alrededor del mundo…</p>
+              </div>
+            </div>
+            <div class="global-map-panel">
+              <header class="global-map-toolbar">
+                <div><strong>Planisferio político interactivo</strong><span>Pasa el cursor o toca un país. Arrastra para explorar y pellizca para acercar.</span></div>
+                <div class="global-map-zoom" role="group" aria-label="Controles de zoom del mapa">
+                  <button id="globalMapZoomOut" type="button" aria-label="Alejar mapa">−</button>
+                  <output id="globalMapZoomValue" aria-live="polite">100%</output>
+                  <button id="globalMapZoomIn" type="button" aria-label="Acercar mapa">+</button>
+                  <button id="globalMapReset" type="button" aria-label="Restablecer mapa">Vista global</button>
+                </div>
+              </header>
+              <div class="global-map-workspace">
+                <div id="globalRaveMapViewport" class="global-map-viewport">
+                  <svg id="globalRaveMap" class="global-rave-map" viewBox="0 0 1000 500" role="img" tabindex="0" aria-labelledby="globalRaveMapTitle globalRaveMapDescription">
+                    <title id="globalRaveMapTitle">Planisferio político interactivo de Rave global</title>
+                    <desc id="globalRaveMapDescription">Mapa vectorial con todos los países delimitados. Los países con personas activas se iluminan. Permite seleccionar, acercar y desplazar sin revelar ubicaciones exactas.</desc>
+                    <defs>
+                      <linearGradient id="globalLand" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e5fbff"/><stop offset=".48" stop-color="#6ee0e1"/><stop offset="1" stop-color="#307fa8"/></linearGradient>
+                      <radialGradient id="globalPresence"><stop offset="0" stop-color="#ffffff"/><stop offset=".3" stop-color="#67e8df"/><stop offset="1" stop-color="#67cdd1" stop-opacity="0"/></radialGradient>
+                      <filter id="globalGlow" x="-200%" y="-200%" width="400%" height="400%"><feGaussianBlur stdDeviation="5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+                    </defs>
+                    <g id="globalRaveMapScene">
+                      <g class="global-map-grid" aria-hidden="true"><path d="M0 125H1000M0 250H1000M0 375H1000M250 0V500M500 0V500M750 0V500"/></g>
+                      <g id="globalRaveCountries" class="global-map-countries"></g>
+                      <g id="globalRaveMicrostates" class="global-map-microstates"></g>
+                      <g id="globalRaveCapitals" class="global-map-capitals"></g>
+                      <g id="globalRavePresencePoints" class="global-map-presence"></g>
+                    </g>
+                  </svg>
+                  <div id="globalMapTooltip" class="global-map-tooltip" role="status" hidden></div>
+                </div>
+                <aside id="globalCountryPanel" class="global-country-panel" aria-live="polite">
+                  <p>PAÍS SELECCIONADO</p>
+                  <div class="global-country-heading"><h2 id="globalCountryName">Explora el mapa</h2><span id="globalCountryStatus">Sin seleccionar</span></div>
+                  <div class="global-country-count"><strong id="globalCountryPeopleCount">—</strong><span>personas activas</span></div>
+                  <div class="global-country-people">
+                    <h3>Quiénes están</h3>
+                    <ul id="globalCountryPeopleList"><li class="empty">Selecciona un país para ver su presencia.</li></ul>
+                  </div>
+                  <p id="globalCountryPrivacy" class="global-country-privacy">Sólo se muestran nombres públicos de perfiles visibles. Los perfiles privados se cuentan, pero permanecen anónimos.</p>
+                </aside>
+              </div>
+              <div class="global-map-legend"><span><i class="country-inactive"></i> País sin presencia</span><span><i class="country-active"></i> País conectado</span><span><i class="capital"></i> Capital de referencia</span><span><i class="presence"></i> Presencia dentro del país</span><small>Máximo 25 indicadores por país · nunca mostramos ciudad ni coordenadas</small></div>
+            </div>
+            <p id="breakingRaveSignature" class="breaking-rave-signature" data-i18n-ignore>BREAKING RAVE</p>
+          </div>
+        </section>
+
+        <section id="view-sponsors" class="view" data-view-panel="sponsors" aria-labelledby="sponsorsTitle" hidden>
+          <div class="sponsor-room">
+            <header class="sponsor-room-heading"><div><p class="eyebrow">SALA DE SPONSORS</p><h1 id="sponsorsTitle">¡Conoce y recompensa!</h1><p>Las estrellas de cada anuncio van para tu artista elegido. Él ha seleccionado estos anuncios para ti.</p></div><div class="star-wallet-pill"><span>★</span><strong id="sponsorWalletBalance">0</strong><small>estrellas</small></div></header>
+            <p id="sponsorRoomStatus" class="form-status" role="status">Buscando contenido patrocinado…</p>
+            <div id="sponsorRoomGrid" class="sponsor-room-grid"></div>
+          </div>
+        </section>
+
+        <section id="view-profile" class="view" data-view-panel="profile" aria-labelledby="profileTitle" hidden>
+          <div class="profile-layout">
+            <div class="profile-intro"><p class="eyebrow">TU IDENTIDAD, TU DECISIÓN</p><h1 id="profileTitle">Perfil Q Session.</h1><p>Puedes escuchar sin perfil. Para crear y transmitir una sala debes tener un perfil activo e iniciar sesión.</p></div>
+
+            <div id="signedOutPanel" class="account-panel">
+              <div class="auth-switch" role="tablist"><button class="active" type="button" data-auth-mode="register" role="tab">Crear cuenta</button><button type="button" data-auth-mode="login" role="tab">Iniciar sesión</button></div>
+              <form id="accountForm" method="post" action="/api/auth/register" autocomplete="on">
+                <div id="registrationFields">
+                  <label>Nombre visible<input id="accountName" maxlength="60" autocomplete="name" placeholder="¿Cómo quieres que te llamen?" required /></label>
+                  <fieldset><legend>Quiero participar como</legend><div class="role-choice"><label><input type="radio" name="accountRole" value="listener" checked /><span><b>Oyente</b><small>Escuchar, bailar y conectar</small></span></label><label><input type="radio" name="accountRole" value="dj" /><span><b>DJ / artista</b><small>Crear y transmitir sesiones</small></span></label></div></fieldset>
+                </div>
+                <label>Correo electrónico<input id="accountEmail" name="username" type="email" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="tu@correo.com" /></label>
+                <div class="account-password-field">
+                  <label for="accountPassword">Contraseña</label>
+                  <div class="account-password-control">
+                    <input id="accountPassword" name="password" type="password" maxlength="128" minlength="10" autocomplete="new-password" required placeholder="Mínimo 10 caracteres" />
+                    <button id="toggleAccountPassword" type="button" aria-controls="accountPassword" aria-pressed="false">Mostrar contraseña</button>
+                  </div>
+                </div>
+                <div id="accountPasswordConfirmationField" class="account-password-field">
+                  <label for="accountPasswordConfirmation">Repite la contraseña</label>
+                  <div class="account-password-control">
+                    <input id="accountPasswordConfirmation" name="passwordConfirmation" type="password" maxlength="128" minlength="10" autocomplete="new-password" required placeholder="Escríbela nuevamente" />
+                    <button id="toggleAccountPasswordConfirmation" type="button" aria-controls="accountPasswordConfirmation" aria-pressed="false">Mostrar contraseña</button>
+                  </div>
+                </div>
+                <label class="account-remember"><input id="rememberAccountEmail" type="checkbox" checked /><span><b>Recordarme en este dispositivo</b><small>Mantiene la sesión y recuerda el correo; nunca guardamos tu contraseña.</small></span></label>
+                <button id="accountSubmit" class="wide-action" type="submit">Crear mi cuenta <span>→</span></button>
+                <button id="forgotAccountPassword" class="account-link-button" type="button">¿Olvidaste tu contraseña?</button>
+                <p id="accountStatus" class="form-status" role="status"></p>
+              </form>
+            </div>
+
+            <form id="profileEditor" class="account-panel" hidden>
+              <div class="profile-editor-heading"><div class="avatar" id="profileAvatar">Q</div><div><p>CUENTA ACTIVA</p><h2 id="profileGreeting">Tu perfil</h2></div><button id="logoutButton" type="button">Salir</button></div>
+              <div class="editor-grid"><label>Nombre visible<input id="profileName" maxlength="60" required /></label><label>Tipo de perfil<select id="profileRole"><option value="listener">Oyente</option><option value="dj">DJ / artista</option></select></label></div>
+              <label>Presentación<textarea id="profileBio" maxlength="300" rows="3" placeholder="Cuéntale algo breve a la comunidad"></textarea></label>
+              <div class="editor-grid location-grid"><label>País de residencia<input id="profileCountry" maxlength="100" autocomplete="country-name" required placeholder="Ej. Colombia" /></label><label>Ciudad de residencia<input id="profileCity" maxlength="100" autocomplete="address-level2" required placeholder="Ej. Bogotá" /></label></div>
+              <div class="privacy-stack">
+                <label><span><b>Perfil visible</b><small>Aparecer en Personas sólo mientras estés en una sala</small></span><input id="profileVisible" type="checkbox" /></label>
+                <label><span><b>Matchmaking</b><small>Permitir que otros descubran tu perfil</small></span><input id="allowMatchmaking" type="checkbox" /></label>
+                <label><span><b>Mensajes</b><small>Permitir invitaciones a conversar</small></span><input id="allowMessages" type="checkbox" /></label>
+                <label><span><b>Mostrar residencia</b><small>Compartir país y ciudad en Personas</small></span><input id="showResidence" type="checkbox" /></label>
+                <label><span><b>Rave global</b><small>Solicitar ubicación real sólo mientras estés presente</small></span><input id="shareLocation" type="checkbox" /></label>
+              </div>
+              <div class="gallery-editor"><div><h3>Tus fotos</h3><p>Hasta seis archivos JPG, PNG o WebP de máximo 2 MB.</p></div><label class="upload-button"><input id="profilePhotoInput" type="file" accept="image/jpeg,image/png,image/webp" hidden />+ Agregar foto</label><span id="photoCount">0/6</span></div>
+              <div id="profileGallery" class="profile-gallery"></div>
+              <button class="wide-action" type="submit">Guardar perfil <span>✓</span></button>
+              <p id="profileStatus" class="form-status" role="status"></p>
+            </form>
+
+            <section id="accountDataPanel" class="account-panel account-data-panel" hidden aria-labelledby="accountDataTitle">
+              <header><div><p>PRIVACIDAD Y CONTROL</p><h2 id="accountDataTitle">Tus datos y tu cuenta</h2><span>Puedes obtener una copia de tu información o eliminarla definitivamente.</span></div></header>
+              <div class="account-data-actions">
+                <button id="downloadAccountData" type="button"><i aria-hidden="true">↓</i><span><strong>Descargar mis datos</strong><small>Recibe una copia en formato JSON</small></span></button>
+                <button id="openDeleteAccount" class="danger" type="button"><i aria-hidden="true">×</i><span><strong>Eliminar mi cuenta</strong><small>Borra perfil, salas y archivos personales</small></span></button>
+              </div>
+              <p id="accountDataStatus" class="form-status" role="status"></p>
+            </section>
+
+            <section id="sessionHistoryPanel" class="account-panel session-history-panel" hidden aria-labelledby="sessionHistoryTitle">
+              <header class="session-history-heading">
+                <div><p>ACTIVIDAD DEL ORGANIZADOR</p><h2 id="sessionHistoryTitle">Historial de sesiones</h2><span>Cada sala creada desde tu cuenta queda registrada con sus métricas.</span></div>
+                <button id="refreshSessionHistory" type="button" aria-label="Actualizar historial">↻</button>
+              </header>
+              <div id="sessionHistorySummary" class="session-history-summary" hidden></div>
+              <div id="sessionHistoryList" class="session-history-list">
+                <p class="session-history-empty">Cuando organices una sesión, aparecerá aquí.</p>
+              </div>
+              <p id="sessionHistoryStatus" class="form-status" role="status"></p>
+            </section>
+
+            <section id="starWalletPanel" class="account-panel star-wallet-panel" hidden aria-labelledby="starWalletTitle">
+              <header><div><p>ECONOMÍA Q SESSION</p><h2 id="starWalletTitle">Tus estrellas</h2><span>Compra estrellas para entrar a sesiones o apoyar a artistas.</span></div><strong id="starWalletBalance">0 ★</strong></header>
+              <div class="reward-source-report" aria-label="Origen de tus estrellas">
+                <span><b id="starPurchasedTotal">0</b><small>Compradas</small></span>
+                <span><b id="starGiftTotal">0</b><small>Regalos recibidos</small></span>
+                <span><b id="starSponsorTotal">0</b><small>Publicidad</small></span>
+              </div>
+              <div id="starPackageList" class="star-package-list"></div>
+              <p id="starWalletStatus" class="form-status" role="status"></p>
+            </section>
+
+            <section id="flowerWalletPanel" class="account-panel flower-wallet-panel" hidden aria-labelledby="flowerWalletTitle">
+              <header><div><p>RECONOCIMIENTOS</p><h2 id="flowerWalletTitle">Tus flores</h2><span>Las recibes por permanecer en una sesión. Puedes ofrecerlas a un artista o usarlas para conectar con alguien.</span></div><strong id="flowerWalletTotal">0</strong></header>
+              <div class="reward-source-report" aria-label="Origen de tus flores">
+                <span><b id="flowerListeningTotal">0</b><small>Permanencia</small></span>
+                <span><b id="flowerGiftTotal">0</b><small>Regalos recibidos</small></span>
+                <span><b id="flowerMatchTotal">0</b><small>Conexiones</small></span>
+              </div>
+              <div id="flowerWalletList" class="flower-wallet-list"></div>
+              <p class="flower-wallet-note">No se compran y no forman un ranking. Cada flor representa tiempo compartido.</p>
+            </section>
+          </div>
+        </section>
+
+        <footer id="appVersionLabel" class="app-version-label" data-i18n-ignore aria-label="Versión y enlaces legales de Q Session">
+          <span>Q Session Web · v0.1.4</span>
+          <nav aria-label="Información legal"><a href="/terminos-anfitriones.html">Términos</a><a href="/propiedad-intelectual.html">Propiedad intelectual</a><a href="/reportar-contenido.html">Reportar contenido</a><a href="/privacidad.html">Privacidad</a><a href="/eliminar-cuenta.html">Eliminar cuenta</a></nav>
+        </footer>
+      </main>
+
+      <nav class="bottom-nav" aria-label="Navegación móvil">
+        <button class="active" type="button" data-view="live"><i>●</i><span>En vivo</span></button>
+        <button type="button" data-view="people"><i>◎</i><span>Personas</span></button>
+        <button type="button" data-view="chat"><i>✦</i><span>Chat</span></button>
+        <!-- GLOBAL_RAVE_NAV_PAUSED: acceso móvil reservado para una etapa posterior. -->
+      </nav>
+    </div>
+    <dialog id="accountRecoveryDialog" class="account-security-dialog" aria-labelledby="accountRecoveryTitle">
+      <div class="account-security-panel">
+        <button id="closeAccountRecovery" class="account-security-close" type="button" aria-label="Cerrar recuperación">×</button>
+        <p class="eyebrow">RECUPERAR ACCESO</p>
+        <h2 id="accountRecoveryTitle">Crea una nueva contraseña</h2>
+        <p>Te enviaremos un código de seis dígitos al correo de tu cuenta. Caduca en 15 minutos.</p>
+        <form id="accountRecoveryRequestForm" autocomplete="on">
+          <label for="recoveryEmail">Correo electrónico</label>
+          <input id="recoveryEmail" name="username" type="email" maxlength="254" autocomplete="username" autocapitalize="none" spellcheck="false" required placeholder="tu@correo.com" />
+          <button class="wide-action" type="submit">Enviar código <span>→</span></button>
+        </form>
+        <form id="accountRecoveryResetForm" autocomplete="on" hidden>
+          <label for="recoveryCode">Código recibido</label>
+          <input id="recoveryCode" name="one-time-code" type="text" inputmode="numeric" autocomplete="one-time-code" minlength="6" maxlength="6" pattern="[0-9]{6}" required placeholder="000000" />
+          <div class="account-password-field">
+            <label for="recoveryPassword">Nueva contraseña</label>
+            <div class="account-password-control"><input id="recoveryPassword" name="new-password" type="password" minlength="10" maxlength="128" autocomplete="new-password" required placeholder="Mínimo 10 caracteres" /><button id="toggleRecoveryPassword" type="button" aria-controls="recoveryPassword" aria-pressed="false">Mostrar contraseña</button></div>
+          </div>
+          <div class="account-password-field">
+            <label for="recoveryPasswordConfirmation">Repite la nueva contraseña</label>
+            <div class="account-password-control"><input id="recoveryPasswordConfirmation" type="password" minlength="10" maxlength="128" autocomplete="new-password" required placeholder="Escríbela nuevamente" /><button id="toggleRecoveryPasswordConfirmation" type="button" aria-controls="recoveryPasswordConfirmation" aria-pressed="false">Mostrar contraseña</button></div>
+          </div>
+          <button class="wide-action" type="submit">Actualizar contraseña <span>✓</span></button>
+          <button id="requestAnotherRecoveryCode" class="account-link-button" type="button">Enviar un código nuevo</button>
+        </form>
+        <p id="accountRecoveryStatus" class="form-status" role="status"></p>
+      </div>
+    </dialog>
+    <dialog id="deleteAccountDialog" class="account-security-dialog delete-account-dialog" aria-labelledby="deleteAccountTitle">
+      <form id="deleteAccountForm" class="account-security-panel" autocomplete="off">
+        <button id="closeDeleteAccount" class="account-security-close" type="button" aria-label="Cerrar eliminación de cuenta">×</button>
+        <p class="eyebrow">ACCIÓN DEFINITIVA</p>
+        <h2 id="deleteAccountTitle">Eliminar tu cuenta</h2>
+        <p>Se borrarán tu perfil, fotografías, salas, bonos disponibles y archivos personales. Los comprobantes de pago se conservarán anonimizados por obligación contable.</p>
+        <div class="account-password-field">
+          <label for="deleteAccountPassword">Tu contraseña actual</label>
+          <div class="account-password-control"><input id="deleteAccountPassword" type="password" maxlength="128" autocomplete="current-password" required /><button id="toggleDeleteAccountPassword" type="button" aria-controls="deleteAccountPassword" aria-pressed="false">Mostrar contraseña</button></div>
+        </div>
+        <label for="deleteAccountConfirmation">Escribe <strong>ELIMINAR</strong> para confirmar</label>
+        <input id="deleteAccountConfirmation" type="text" maxlength="8" autocomplete="off" required placeholder="ELIMINAR" />
+        <div class="account-security-actions"><button id="cancelDeleteAccount" type="button">Conservar mi cuenta</button><button class="danger" type="submit">Eliminar definitivamente</button></div>
+        <p id="deleteAccountStatus" class="form-status" role="status"></p>
+      </form>
+    </dialog>
+    <dialog id="accountMenuDialog" class="account-menu-dialog" aria-labelledby="accountMenuTitle">
+      <form method="dialog">
+        <header>
+          <div class="account-menu-identity">
+            <span id="accountMenuAvatar">Q</span>
+            <div><small>CUENTA Q SESSION</small><strong id="accountMenuTitle">Menú</strong><p id="accountMenuStatus">Puedes entrar sin crear una cuenta.</p></div>
+          </div>
+          <button id="closeAccountMenu" class="account-menu-close" type="submit" aria-label="Cerrar menú">×</button>
+        </header>
+        <nav class="account-menu-links" aria-label="Menú de Q Session">
+          <button type="button" data-view="create"><i>＋</i><span>Crear sesión</span></button>
+          <button type="button" data-view="live"><i>●</i><span>En vivo</span></button>
+          <button type="button" data-view="people"><i>◎</i><span>Personas</span></button>
+          <button type="button" data-view="chat"><i>✦</i><span>Chat</span></button>
+          <!-- GLOBAL_RAVE_NAV_PAUSED: acceso del menú reservado para una etapa posterior. -->
+          <!-- SPONSORS_NAV_PAUSED: conservar para reactivar el acceso del menú.
+          <button type="button" data-view="sponsors"><i>★</i><span>Sponsors</span></button>
+          -->
+          <button type="button" data-view="vision"><i>◇</i><span>Visión</span></button>
+          <button id="accountRewardsShortcut" type="button" data-view="profile" hidden><i>✿</i><span>Recompensas</span></button>
+          <button class="account-menu-profile" type="button" data-view="profile"><i>○</i><span id="accountMenuProfileLabel">Entrar o crear cuenta</span></button>
+          <div class="account-menu-legal"><a href="/terminos-anfitriones.html">Términos</a><a href="/propiedad-intelectual.html">Propiedad intelectual</a><a href="/reportar-contenido.html">Reportar contenido</a><a href="/privacidad.html">Privacidad</a><a href="/eliminar-cuenta.html">Eliminar cuenta</a></div>
+        </nav>
+      </form>
+    </dialog>
+    <dialog id="personActionDialog" class="person-action-dialog" aria-labelledby="personActionName">
+      <div class="person-action-sheet">
+        <button id="closePersonActionDialog" class="person-action-close" type="button" aria-label="Cerrar opciones de la persona">×</button>
+        <header class="person-action-identity">
+          <span id="personActionAvatar" class="person-action-avatar">Q</span>
+          <div><small id="personActionPresence">PERFIL PÚBLICO</small><h2 id="personActionName">Persona Q Session</h2><p id="personActionMeta">Comunidad Q Session</p></div>
+        </header>
+        <div id="personActionMenu" class="person-action-menu">
+          <button id="viewPersonProfile" type="button"><i aria-hidden="true">○</i><span><strong>Ver perfil</strong><small>Fotos, descripción y lugar</small></span><b aria-hidden="true">›</b></button>
+          <button id="messagePerson" type="button"><i aria-hidden="true">✉</i><span><strong>Enviar mensaje</strong><small>Abrir un chat privado</small></span><b aria-hidden="true">›</b></button>
+          <button id="giftPerson" type="button"><i aria-hidden="true">✿</i><span><strong>Enviar una flor</strong><small>Reconoce el tiempo del artista</small></span><b aria-hidden="true">›</b></button>
+          <button id="tipPerson" type="button"><i aria-hidden="true">★</i><span><strong>Enviar estrellas</strong><small>Apoya directamente a este artista</small></span><b aria-hidden="true">›</b></button>
+        </div>
+        <section id="personProfileDetails" class="person-profile-details" hidden>
+          <div id="personProfileGallery" class="person-profile-gallery"></div>
+          <p id="personProfileBio">Este perfil todavía no agregó una descripción.</p>
+        </section>
+        <div id="personGiftChoices" class="person-gift-choices person-flower-choices" hidden aria-label="Elige una flor"></div>
+        <div id="personStarChoices" class="person-gift-choices" hidden aria-label="Elige cuántas estrellas enviar">
+          <button type="button" data-send-stars="1"><span>★</span> 1</button>
+          <button type="button" data-send-stars="5"><span>★</span> 5</button>
+          <button type="button" data-send-stars="10"><span>★</span> 10</button>
+          <button type="button" data-send-stars="25"><span>★</span> 25</button>
+        </div>
+        <section id="personMatchmaking" class="person-matchmaking">
+          <div><small>MATCHMAKING</small><strong id="personMatchmakingStatus">Consultando disponibilidad</strong><p>Usa una flor para mostrar interés. La otra persona siempre decide si responde.</p></div>
+          <button id="touchPerson" type="button">Conectar con una flor</button>
+        </section>
+        <div class="person-action-secondary">
+          <button id="savePersonProfile" type="button"><span aria-hidden="true">♡</span> Guardar perfil</button>
+          <button id="sharePersonProfile" type="button"><span aria-hidden="true">↗</span> Compartir perfil</button>
+        </div>
+        <p id="personActionStatus" class="person-action-status" role="status"></p>
+      </div>
+    </dialog>
+    <dialog id="profileActivityDialog" class="profile-activity-dialog" aria-labelledby="profileActivityTitle">
+      <div class="profile-activity-sheet">
+        <header><div><p class="eyebrow">TUS CONEXIONES</p><h2 id="profileActivityTitle">Tu actividad</h2><p>Perfiles que guardaste o con los que hubo una interacción.</p></div><button id="closeProfileActivityDialog" type="button" aria-label="Cerrar actividad">×</button></header>
+        <div id="profileActivityList" class="profile-activity-list"><p class="profile-activity-empty">Los perfiles sólo se conservarán aquí cuando los guardes o exista una interacción.</p></div>
+        <button id="refreshProfileActivity" class="profile-activity-refresh" type="button">Actualizar actividad</button>
+      </div>
+    </dialog>
+    <dialog id="confirmationDialog" class="session-confirm-dialog" aria-labelledby="confirmationDialogTitle" aria-describedby="confirmationDialogMessage">
+      <div class="session-confirm-panel">
+        <span class="session-confirm-symbol" aria-hidden="true">×</span>
+        <p class="eyebrow">ACCIÓN IMPORTANTE</p>
+        <h2 id="confirmationDialogTitle">¿Cerrar esta sesión?</h2>
+        <p id="confirmationDialogMessage">La transmisión terminará para todas las personas y dejará de aparecer en Salas activas.</p>
+        <p id="confirmationDialogContext" class="session-confirm-context" hidden><span>SESIÓN</span><strong id="confirmationDialogContextValue" data-i18n-ignore></strong></p>
+        <div class="session-confirm-actions">
+          <button id="confirmationCancel" type="button">Seguir transmitiendo</button>
+          <button id="confirmationAccept" type="button">Cerrar sesión</button>
+        </div>
+      </div>
+    </dialog>
+    <dialog id="customQuoteDialog" class="q-dialog custom-quote-dialog" aria-labelledby="customQuoteTitle">
+      <form id="customQuoteForm" class="custom-quote-panel">
+        <header>
+          <div><p class="eyebrow">EVENTOS Y SALAS A MEDIDA</p><h2 id="customQuoteTitle">Elige el aforo de tu evento.</h2><p>Configura personas, duración y sesiones para calcular tu cotización.</p></div>
+          <button id="customQuoteClose" type="button" aria-label="Cerrar cotización">×</button>
+        </header>
+        <div class="custom-quote-layout">
+          <section class="custom-quote-controls">
+            <fieldset class="custom-quote-capacity-options">
+              <legend>Audiencia del evento</legend>
+              <button type="button" data-quote-capacity="10000" aria-pressed="false"><strong>10.000 personas</strong><small>Audio + video del DJ · 720p</small></button>
+              <button type="button" data-quote-capacity="manual" aria-pressed="true"><strong>Definir manualmente</strong><small>Escribe tu propio aforo</small></button>
+            </fieldset>
+            <div class="custom-quote-numbers">
+              <label>Personas simultáneas
+                <input id="customQuoteCapacity" type="number" min="1" max="50000" step="1" inputmode="numeric" value="100" aria-describedby="customQuoteCapacityHelp" required />
+              </label>
+              <label>Duración por sala
+                <select id="customQuoteDuration">
+                  <option value="60">60 minutos</option><option value="90">90 minutos</option><option value="120" selected>120 minutos</option>
+                  <option value="180">180 minutos</option><option value="240">240 minutos</option><option value="360">360 minutos</option>
+                </select>
+              </label>
+              <label>Cantidad de salas
+                <input id="customQuoteSessions" type="number" min="1" max="30" value="1" required />
+              </label>
+              <label>Idiomas de traducción
+                <select id="customQuoteLanguages"><option value="1">1 idioma</option><option value="2">2 idiomas</option><option value="3">3 idiomas</option></select>
+              </label>
+            </div>
+            <p id="customQuoteCapacityHelp" class="custom-quote-capacity-help">Escribe un aforo entre 1 y 50.000 personas. Más de 5.000 requiere revisión antes de contratar.</p>
+            <p id="customQuoteDeliveryHelp" class="custom-quote-delivery-help" hidden>Para este aforo se cotiza la transmisión de audio y video del DJ a 720p. La capacidad debe validarse antes de contratar y activar el evento.</p>
+            <fieldset class="custom-quote-features">
+              <legend>Funciones que necesitas</legend>
+              <label><input type="checkbox" data-custom-feature="publicChat" checked /> Chat de la sala</label>
+              <label><input type="checkbox" data-custom-feature="guestCameras" /> Cámaras de participantes</label>
+              <label><input type="checkbox" data-custom-feature="participantAudio" /> Micrófonos de participantes</label>
+              <label><input type="checkbox" data-custom-feature="videoUploads" /> Envío de videos</label>
+              <label><input type="checkbox" data-custom-feature="recording" /> Grabación</label>
+              <label><input type="checkbox" data-custom-feature="aiCameraEffects" /> Filtros y disfraces con IA</label>
+              <label><input type="checkbox" data-custom-feature="vjVisuals" /> Visuales VJ</label>
+              <label><input type="checkbox" data-custom-feature="dedicatedSupport" /> Acompañamiento prioritario</label>
+            </fieldset>
+          </section>
+          <aside class="custom-quote-result" aria-live="polite">
+            <small id="customQuotePriceLabel">COTIZACIÓN</small>
+            <strong id="customQuotePrice">Calculando…</strong>
+            <span id="customQuotePerSession">Precio final en pesos colombianos</span>
+            <ul id="customQuoteBreakdown"></ul>
+            <p id="customQuoteValidity">La cotización será válida durante 30 minutos.</p>
+          </aside>
+        </div>
+        <p id="customQuoteStatus" class="form-status" role="status"></p>
+        <footer>
+          <button id="customQuoteCancel" type="button">Seguir comparando</button>
+          <button id="customQuoteCalculate" type="submit">Actualizar precio</button>
+          <button id="customQuoteCopy" type="button" disabled>⧉ Copiar cotización</button>
+          <button id="customQuotePurchase" type="button" disabled>Pagos en preparación</button>
+        </footer>
+      </form>
+    </dialog>
+    <dialog id="installDialog" class="install-dialog" aria-labelledby="installDialogTitle">
+      <form method="dialog">
+        <button class="install-dialog-close" type="submit" aria-label="Cerrar">×</button>
+        <img src="/icons/qsession-icon-192.png?v=20260911-brand-logo-v1" alt="" />
+        <p class="eyebrow">Q SESSION PARA WINDOWS</p>
+        <h2 id="installDialogTitle">Instálala como una aplicación.</h2>
+        <p>Q Session se abrirá en su propia ventana y podrás fijarla al menú Inicio o a la barra de tareas.</p>
+        <ol>
+          <li><span>1</span><p>Abre <b>www.qsession.org</b> en Chrome o Microsoft Edge.</p></li>
+          <li><span>2</span><p>Busca el icono de instalación en el extremo derecho de la barra de direcciones.</p></li>
+          <li><span>3</span><p>Elige <b>Instalar Q Session</b> y confirma.</p></li>
+        </ol>
+        <button class="wide-action" type="submit">Entendido <span>✓</span></button>
+      </form>
+    </dialog>
+    <dialog id="androidInstallDialog" class="install-dialog android-install-dialog" aria-labelledby="androidInstallDialogTitle">
+      <form method="dialog">
+        <button class="install-dialog-close" type="submit" aria-label="Cerrar">×</button>
+        <img src="/icons/qsession-icon-192.png?v=20260911-brand-logo-v1" alt="" />
+        <p class="eyebrow">Q SESSION PARA ANDROID</p>
+        <h2 id="androidInstallDialogTitle">La descarga comenzó.</h2>
+        <p>Cuando termine, abre el archivo en tu teléfono para completar la instalación.</p>
+        <ol>
+          <li><span>1</span><p>Abre la notificación de descarga y toca <b id="androidInstallFilename">QSession-Android-0.1.42.apk</b>.</p></li>
+          <li><span>2</span><p>Si Android lo solicita, toca <b>Ajustes</b> y permite que Chrome instale esta aplicación.</p></li>
+          <li><span>3</span><p>Vuelve al instalador, pulsa <b>Instalar</b> y luego <b>Abrir</b>.</p></li>
+        </ol>
+        <p class="android-install-safety"><span aria-hidden="true">◎</span> Android exige esta confirmación para proteger tu teléfono; una página web no puede pulsarla por ti.</p>
+        <div class="android-install-actions">
+          <button id="openAndroidApp" class="wide-action android-install-open" type="button">Abrir Q Session <span>→</span></button>
+          <button id="repeatAndroidDownload" class="android-install-repeat" type="button">Descargar nuevamente</button>
+          <button class="wide-action" type="submit">Entendido <span>✓</span></button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="roomQrScannerDialog" class="qr-scanner-dialog" aria-labelledby="roomQrScannerTitle">
+      <div class="qr-scanner-panel">
+        <button id="closeRoomQrScanner" class="qr-scanner-close" type="button" aria-label="Cerrar escáner">×</button>
+        <p id="roomQrScannerEyebrow" class="eyebrow">ENTRAR A UNA SALA</p>
+        <h2 id="roomQrScannerTitle">Escanea el QR de la sesión</h2>
+        <div class="qr-camera-frame">
+          <video id="roomQrVideo" autoplay muted playsinline poster="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="></video>
+        </div>
+        <p id="roomQrScannerStatus" class="qr-scanner-status" role="status">Mantén el QR completo y nítido dentro del recuadro.</p>
+        <button id="cancelRoomQrScanner" class="qr-scanner-cancel" type="button">Cancelar</button>
+      </div>
+    </dialog>
+    <dialog id="roomPasswordDialog" class="room-password-dialog" aria-labelledby="roomPasswordDialogTitle">
+      <form id="roomPasswordForm">
+        <button id="closeRoomPassword" class="room-password-close" type="button" aria-label="Cerrar">×</button>
+        <p class="eyebrow">SALA PROTEGIDA</p>
+        <h2 id="roomPasswordDialogTitle">Escribe la contraseña</h2>
+        <p id="roomPasswordDialogName">El anfitrión protegió el acceso a esta sesión.</p>
+        <label for="roomAccessPassword">Contraseña de la sesión
+          <input id="roomAccessPassword" type="password" minlength="6" maxlength="64" autocomplete="current-password" required />
+        </label>
+        <div class="room-password-actions">
+          <button id="cancelRoomPassword" type="button">Cancelar</button>
+          <button type="submit">Entrar <span>→</span></button>
+        </div>
+        <p id="roomPasswordStatus" class="form-status" role="status"></p>
+      </form>
+    </dialog>
+    <div id="toast" class="toast" role="status" hidden></div>
+    <script src="/vendor/livekit-client.umd.js"></script>
+    <script src="/vendor/hls.min.js"></script>
+    <script src="/vendor/zxing-browser.min.js"></script>
+    <script src="/analytics.js?v=20260910-admin-v1"></script>
+    <script src="/i18n.js?v=20261003-public-rooms-v1"></script>
+    <script src="/data/world-countries.js?v=20261016-vision-map-v2"></script>
+    <script src="/country-location.js?v=20261008-windows-gps-v1"></script>
+    <script src="/camera-effects.js?v=20261018-camera-clock-v4"></script>
+    <script src="/dj-mixer.js?v=20261016-autodj-calibration-v2"></script>
+    <script src="/qdj-request.js?v=20261010-semantic-intent-v1"></script>
+    <script src="/music-library.js?v=20261016-autodj-calibration-v2"></script>
+    <script src="/people-cameras.js?v=20261009-library-page-v7"></script>
+    <script src="/studio-ui.js?v=20261009-library-page-v7"></script>
+    <script src="/app.js?v=20261020-private-groups-v1"></script>
+  </body>
+</html>

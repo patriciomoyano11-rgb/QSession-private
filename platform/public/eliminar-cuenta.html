@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#102746" />
+  <meta name="description" content="Solicita y completa la eliminación de tu cuenta Q Session." />
+  <title>Eliminar cuenta · Q Session</title>
+  <link rel="icon" href="/icons/qsession-icon-192.png" />
+  <link rel="stylesheet" href="/legal.css" />
+  <link rel="stylesheet" href="/qsession-sky-palette.css?v=20261016-sky-palette-v1" />
+</head>
+<body>
+  <main class="legal-shell">
+    <a class="legal-brand" href="/" aria-label="Volver a Q Session">
+      <img src="/icons/qsession-icon-192.png" alt="" />
+      <span><strong>Q Session</strong><small>LIVE WITHOUT BORDERS</small></span>
+    </a>
+    <article class="legal-card">
+      <p class="legal-eyebrow">CONTROL DE TU CUENTA</p>
+      <h1>Eliminar tu cuenta Q Session.</h1>
+      <p class="legal-lead">Puedes completar el proceso desde aquí, incluso si ya desinstalaste la aplicación. Por seguridad necesitamos verificar tu correo y contraseña.</p>
+      <div class="legal-meta"><span>Proceso oficial</span><span>Eliminación definitiva</span></div>
+
+      <section id="loginStep" class="legal-section">
+        <h2>1. Verifica tu identidad</h2>
+        <form id="deletionLoginForm" class="legal-form" autocomplete="on">
+          <label>Correo electrónico<input id="deletionEmail" name="username" type="email" maxlength="254" autocomplete="username" autocapitalize="none" required /></label>
+          <label>Contraseña<input id="deletionLoginPassword" name="current-password" type="password" maxlength="128" autocomplete="current-password" required /></label>
+          <button class="legal-button primary" type="submit">Continuar de forma segura</button>
+        </form>
+        <p class="legal-note">Si olvidaste tu contraseña, puedes recuperarla en <a href="/#profile">Q Session → Perfil</a> y regresar a esta página.</p>
+      </section>
+
+      <section id="deleteStep" class="legal-section" hidden>
+        <h2>2. Revisa y confirma</h2>
+        <p>Se eliminarán tu perfil, fotografías, salas, contactos, mensajes y archivos personales. Tus bonos pendientes quedarán anulados. Los comprobantes de pago podrán conservarse anonimizados cuando exista una obligación contable.</p>
+        <div class="legal-actions"><button id="downloadDeletionData" class="legal-button" type="button">Descargar mis datos primero</button></div>
+        <form id="deletionConfirmForm" class="legal-form" autocomplete="off">
+          <label>Contraseña actual<input id="deletionPassword" type="password" maxlength="128" autocomplete="current-password" required /></label>
+          <label>Escribe ELIMINAR<input id="deletionConfirmation" type="text" maxlength="8" autocomplete="off" pattern="ELIMINAR" placeholder="ELIMINAR" required /></label>
+          <p class="legal-note danger">Esta acción no se puede deshacer. Podrás crear otra cuenta en el futuro, pero la información eliminada no se recuperará.</p>
+          <button class="legal-button danger" type="submit">Eliminar definitivamente</button>
+        </form>
+      </section>
+
+      <section id="doneStep" class="legal-section" hidden>
+        <h2>Cuenta eliminada</h2>
+        <p>La sesión se cerró y tus datos personales fueron retirados de Q Session. Recibirás esta confirmación en pantalla como constancia del proceso.</p>
+        <div class="legal-actions"><a class="legal-button primary" href="/">Volver al inicio</a></div>
+      </section>
+      <p id="deletionStatus" class="legal-status" role="status" aria-live="polite"></p>
+    </article>
+    <footer class="legal-footer"><span>© 2026 Q Session</span><nav><a href="/terminos-anfitriones.html">Términos</a><a href="/propiedad-intelectual.html">Propiedad intelectual</a><a href="/reportar-contenido.html">Reportar contenido</a><a href="/privacidad.html">Privacidad</a><a href="/">Inicio</a></nav></footer>
+  </main>
+  <script src="/eliminar-cuenta.js" defer></script>
+</body>
+</html>

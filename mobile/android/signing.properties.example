@@ -1,0 +1,6 @@
+# Copia este archivo como signing.properties solo al preparar una publicación.
+# No agregues signing.properties ni el archivo .jks al repositorio.
+storeFile=../keys/qsession-release.jks
+storePassword=CAMBIAR
+keyAlias=qsession
+keyPassword=CAMBIAR

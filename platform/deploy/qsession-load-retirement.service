@@ -1,0 +1,18 @@
+[Unit]
+Description=Retire only the approved QSession disposable load batch
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 /opt/qsession-load-guard/retire-load-generators.py --scope /etc/qsession-load-guard/scope.json --key-file /etc/qsession-load-guard/vultr.key --apply
+User=root
+UMask=0077
+TimeoutStartSec=240
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+StandardOutput=journal
+StandardError=journal
