@@ -1,0 +1,6 @@
+/.gitattributes text eol=lf
+platform/server.js text eol=lf
+platform/product-store.js text eol=lf
+platform/public/app.js text eol=lf
+platform/public/index.html text eol=lf
+platform/public/sw.js text eol=lf

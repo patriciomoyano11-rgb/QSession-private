@@ -271,7 +271,7 @@ test('Q Session ofrece biblioteca musical sin dependencia de una LAN', async () 
     assert.match(home, /\/qsession-sky-palette\.css\?v=20261016-sky-palette-v1/);
     assert.match(home, /\/dj-mixer\.js\?v=20261016-autodj-calibration-v2/);
     assert.match(home, /\/music-library\.js\?v=20261016-autodj-calibration-v2/);
-    assert.match(home, /\/app\.js\?v=20261020-private-groups-v1/);
+    assert.match(home, /\/app\.js\?v=20261020-runtime-reconciled-v1/);
     assert.doesNotMatch(home, /id="musicRightsDeclaration"/);
     assert.doesNotMatch(home, /id="musicRightsAccepted"/);
     assert.match(home, /id="customQuoteDialog"/);
@@ -563,7 +563,7 @@ test('Q Session ofrece biblioteca musical sin dependencia de una LAN', async () 
     assert.match(home, /class="music-library-open" data-open-music/);
     assert.doesNotMatch(home, /href="\/musica"/i);
     const serviceWorker = await (await fetch(`${app.baseUrl}/sw.js`)).text();
-    assert.match(serviceWorker, /qsession-20261020-private-groups-v1/);
+    assert.match(serviceWorker, /qsession-20261020-runtime-reconciled-v1/);
     assert.match(serviceWorker, /styles\.css\?v=20261018-event-capacity-v1/);
     assert.match(serviceWorker, /i18n\.js\?v=20261003-public-rooms-v1/);
     assert.match(serviceWorker, /analytics\.js\?v=20260910-admin-v1/);
@@ -572,7 +572,7 @@ test('Q Session ofrece biblioteca musical sin dependencia de una LAN', async () 
     assert.match(serviceWorker, /qsession-sky-palette\.css\?v=20261016-sky-palette-v1/);
     assert.match(serviceWorker, /dj-mixer\.js\?v=20261016-autodj-calibration-v2/);
     assert.match(serviceWorker, /music-library\.js\?v=20261016-autodj-calibration-v2/);
-    assert.match(serviceWorker, /app\.js\?v=20261020-private-groups-v1/);
+    assert.match(serviceWorker, /app\.js\?v=20261020-runtime-reconciled-v1/);
     assert.doesNotMatch(serviceWorker, /app-releases\.json/);
     assert.match(serviceWorker, /vendor\/hls\.min\.js/);
     assert.match(serviceWorker, /qsession-world-network/);
