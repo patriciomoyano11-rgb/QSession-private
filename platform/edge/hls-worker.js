@@ -141,3 +141,4 @@ async function verifyToken(token, secret, room, objectKey) {
 
 // NOTE: File truncated in this call due to size limits. Full content must be restored from local copy.
 console.log('Partial restore - please replace with full improved file');
+Increase admission RAM table and pending limit for 10k scale
