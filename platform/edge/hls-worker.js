@@ -29,8 +29,8 @@ const CACHE_FILL_WAIT_MS = 4000;
 // Bounds apply to one Worker isolate, not to a colo or the whole deployment.
 // A cold fill gets less than one six-second segment interval. Waiters never
 // turn an expired fill into one upstream request per listener.
-const CACHE_FILL_WAITERS_PER_KEY = 128;
-const CACHE_FILL_TOTAL_WAITERS = 256;
+const CACHE_FILL_WAITERS_PER_KEY = 192;
+const CACHE_FILL_TOTAL_WAITERS = 384;
 const CACHE_FILL_FAILURE_BACKOFF_MS = 1000;
 let cacheFillWaiters = 0;
 const pendingCanaryMetadata = new Map();
