@@ -367,7 +367,11 @@ test('a timed-out fill never fans out to the same actor, including later arrival
     return new Response(new ReadableStream({cancel() { cancelled++; }}, {highWaterMark: 0}), {headers: {'Content-Length': '8'}});
   });
   h.scope.caches = {default: cache};
-  const responses = await Promise.all(Array.from({length: 160}, () => get()));
+  assert.equal(vm.runInContext('CACHE_FILL_WAITERS_PER_KEY', h.scope), 192);
+  assert.equal(vm.runInContext('CACHE_FILL_TOTAL_WAITERS', h.scope), 384);
+  // 32 arrivals past the per-key cap must still fail closed as pending.
+  const overflow = vm.runInContext('CACHE_FILL_WAITERS_PER_KEY + 32', h.scope);
+  const responses = await Promise.all(Array.from({length: overflow}, () => get()));
   for (const response of responses) {
     assert.equal(response.status, 503);
     assert.ok(['pending', 'timed-out'].includes(response.headers.get('X-QSession-Cache-Fill-State')));
