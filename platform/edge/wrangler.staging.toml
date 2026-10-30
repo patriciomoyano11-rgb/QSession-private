@@ -1,0 +1,18 @@
+# Staging only. Never attach live.qsession.org or the production bucket.
+# Deploy with: npx wrangler deploy --config wrangler.staging.toml
+# from platform/edge, after `npx wrangler login` on the staging account.
+name = "qsession-live-staging"
+main = "hls-worker.js"
+compatibility_date = "2026-09-23"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "QSESSION_LIVE"
+bucket_name = "qsession-live-staging"
+preview_bucket_name = "qsession-live-staging-preview"
+
+# Playback hostname must be outside qsession.org, for example
+# live.staging.qsession.test or the workers.dev name Wrangler prints.
+# Do not set a route on live.qsession.org, www.qsession.org or qsession.org.
+# Leave QSESSION_ADMISSION_BACKEND unset so segment reads trust the HMAC token.
+# Set QSESSION_ADMISSION_BACKEND=required only to restore the Redis check.

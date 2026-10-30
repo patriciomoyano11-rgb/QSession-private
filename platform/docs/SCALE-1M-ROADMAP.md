@@ -100,7 +100,7 @@ La cuenta de Cloudflare del staging debería ser otra. Si tiene que ser la misma
 
 ### Configuración que hay que aplicar cuando exista el entorno
 
-No está aplicada. No hay secretos en el repositorio. Ejemplo de Worker, al lado de `platform/edge/wrangler.toml.example`:
+No está aplicada. No hay secretos en el repositorio. El archivo listo para publicar, separado de producción, es `platform/edge/wrangler.staging.toml`. `python3 platform/scripts/check-staging-worker-config.py` comprueba que el nombre y el bucket no sean los de producción, y no llama a Cloudflare. El contenido es:
 
 ```toml
 name = "qsession-live-staging"
