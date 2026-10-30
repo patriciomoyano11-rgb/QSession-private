@@ -77,23 +77,32 @@ class StandardHttpTransport(unittest.IsolatedAsyncioTestCase):
 
 class ProbeDomainScope(unittest.TestCase):
     def tearDown(self):
-        client.configure_delivery_host(client.DELIVERY_HOSTS[0])
+        client.configure_delivery_host('live.staging.qsession.test')
 
     def test_custom_domain_keeps_manifest_leases_on_the_selected_origin(self):
-        client.configure_delivery_host('live.qsession.org')
+        client.configure_delivery_host('live.staging.qsession.test')
         token='synthetic-token'
         manifest='#EXTM3U\n#EXT-X-TARGETDURATION:6\n#EXT-X-MEDIA-SEQUENCE:1\n#EXTINF:6,\nsegment_load_0123456789abcdef_00001.ts?qsat='+token+'\n'
         url=client.segment_urls(manifest,token)[0]
-        self.assertTrue(url.startswith('https://live.qsession.org'+client.PREFIX))
+        self.assertTrue(url.startswith('https://live.staging.qsession.test'+client.PREFIX))
         self.assertTrue(url.endswith('?qsat='+token))
-        for host in ['live.qsession.org.untrusted.test',client.DELIVERY_HOSTS[0]]:
+        for host in ['live.qsession.org', 'qsession-live.patriciomoyano11.workers.dev', 'live.staging.qsession.test.untrusted.test']:
             hostile=manifest.replace('segment_load_', 'https://'+host+client.PREFIX+'segment_load_')
             with self.assertRaises(ValueError):client.parse_manifest(hostile,token)
 
-    def test_unowned_delivery_host_is_rejected_before_configuration(self):
+    def test_production_and_unowned_delivery_hosts_are_rejected_before_configuration(self):
         initial=client.URL
-        with self.assertRaises(ValueError):client.configure_delivery_host('untrusted.test')
-        self.assertEqual(client.URL,initial)
+        for host in ('untrusted.test', 'live.qsession.org', 'www.qsession.org',
+                     'qsession-live.patriciomoyano11.workers.dev', 'staging.qsession.org'):
+            with self.subTest(host=host), self.assertRaises(ValueError):
+                client.configure_delivery_host(host)
+            self.assertEqual(client.URL, initial)
+
+    def test_known_canary_opt_in_is_not_the_load_default(self):
+        client.configure_delivery_host('live.qsession.org', allow_known_canary=True)
+        self.assertEqual(client.HOST, 'live.qsession.org')
+        with self.assertRaises(ValueError):
+            client.configure_delivery_host('live.qsession.org')
 
 
 class Http2Deadline(unittest.IsolatedAsyncioTestCase):

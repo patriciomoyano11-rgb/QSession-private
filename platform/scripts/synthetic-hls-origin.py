@@ -19,11 +19,17 @@ import tempfile
 import threading
 import time
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from load_target_policy import (
+    KNOWN_CANARY_HOSTS, PRODUCTION_R2_ENDPOINT,
+    require_staging_delivery_host, require_staging_storage)
+
 CREDENTIALS = '/opt/qsession-encoder/private/probe-storage.json'
-ENDPOINT = 'https://b3d60daa8319692b18a8bef39b34f14d.r2.cloudflarestorage.com'
+# Historical production destination. Load publication refuses these unless
+# --known-canary is set for the one-client PRB10A pilot.
+ENDPOINT = PRODUCTION_R2_ENDPOINT
 BUCKET = 'qsession-live'
 PREFIX = 'live/PRB10A-hWrdBkirH_2yHmZ9lp/'
-DELIVERY_HOSTS = ('qsession-live.patriciomoyano11.workers.dev', 'live.qsession.org')
 SEGMENT_SECONDS = 6
 
 
@@ -38,8 +44,6 @@ def read_credentials():
         if not stat.S_ISREG(info.st_mode) or info.st_mode & 0o077 or info.st_uid != 0 or info.st_size > 16384:
             raise ValueError('Storage configuration must be a bounded root-owned private file')
         config = json.load(source)
-    if config.get('endpoint') != ENDPOINT or config.get('bucket') != BUCKET:
-        raise ValueError('Unexpected technical storage destination')
     if not config.get('accessKey') or not config.get('secretKey'):
         raise ValueError('Missing technical storage credentials')
     return config
@@ -107,15 +111,32 @@ def read_control_stop(source, run_id, stop):
         stop(command['reason']);return
 
 
+def destination(args, storage):
+    """Staging by default. --known-canary keeps the historical one-client pilot."""
+    if getattr(args, 'known_canary', False) is True:
+        if args.delivery_host not in KNOWN_CANARY_HOSTS:
+            raise ValueError('Known canary playback is limited to the historical PRB10A hostnames')
+        if storage.get('endpoint') != ENDPOINT or storage.get('bucket') != BUCKET:
+            raise ValueError('Known canary storage destination does not match the historical bucket')
+        return args.delivery_host, ENDPOINT, BUCKET
+    host = require_staging_delivery_host(args.delivery_host)
+    endpoint, bucket = require_staging_storage(storage.get('endpoint'), storage.get('bucket'))
+    return host, endpoint, bucket
+
+
 def main(args):
-    if args.delivery_host not in DELIVERY_HOSTS:
-        raise ValueError('Delivery host is outside the isolated test scope')
-    public_url = 'https://' + args.delivery_host + '/' + PREFIX + 'index.m3u8'
+    # Reject a production playback host before opening storage credentials.
+    if getattr(args, 'known_canary', False) is not True:
+        require_staging_delivery_host(args.delivery_host)
+    elif args.delivery_host not in KNOWN_CANARY_HOSTS:
+        raise ValueError('Known canary playback is limited to the historical PRB10A hostnames')
+    storage = read_credentials()
+    delivery_host, endpoint, bucket = destination(args, storage)
     from botocore.config import Config
     from botocore.exceptions import ClientError
     import boto3
-    storage = read_credentials()
-    client = boto3.client('s3', endpoint_url=ENDPOINT, region_name=storage.get('region', 'auto'),
+    public_url = 'https://' + delivery_host + '/' + PREFIX + 'index.m3u8'
+    client = boto3.client('s3', endpoint_url=endpoint, region_name=storage.get('region', 'auto'),
                           aws_access_key_id=storage['accessKey'], aws_secret_access_key=storage['secretKey'],
                           config=Config(connect_timeout=5, read_timeout=10,
                                         retries={'mode': 'standard', 'total_max_attempts': 2},
@@ -159,7 +180,7 @@ def main(args):
     try:
         # Conditional creation prevents two origin scripts from publishing over one another.
         # This does not lock LiveKit Egress: the operator must separately verify PRB10A is idle.
-        client.put_object(Bucket=BUCKET, Key=lock_key,
+        client.put_object(Bucket=bucket, Key=lock_key,
                           Body=json.dumps({'runId': run_id, 'expiresAtUnix': time.time()+args.duration+300}).encode(),
                           ContentType='application/json', IfNoneMatch='*')
         lock_owned = True
@@ -183,14 +204,14 @@ def main(args):
                 key = PREFIX + filename
                 # Include attempted writes in cleanup even when a network timeout hides the outcome.
                 owned_keys.append(key)
-                client.put_object(Bucket=BUCKET, Key=key, Body=payload,
+                client.put_object(Bucket=bucket, Key=key, Body=payload,
                                   ContentType='video/mp2t', CacheControl='public,max-age=86400,immutable')
                 timestamp = datetime.datetime.fromtimestamp(wall_started + (index-2)*SEGMENT_SECONDS,
                                                             datetime.timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
                 window = (window + [{'sequence': index, 'filename': filename,
                                       'programDateTime': timestamp}])[-5:]
                 if index >= 2:
-                    client.put_object(Bucket=BUCKET, Key=manifest_key, Body=make_manifest(window).encode(),
+                    client.put_object(Bucket=bucket, Key=manifest_key, Body=make_manifest(window).encode(),
                                       ContentType='application/vnd.apple.mpegurl', CacheControl='public,max-age=1,s-maxage=2')
                 report['uploadedSegments'] += 1
                 if index == 2:
@@ -217,14 +238,14 @@ def main(args):
         if control_reason is not None:report['controlStopReason']=control_reason
         if lock_owned:
             try:
-                current = client.get_object(Bucket=BUCKET, Key=manifest_key)['Body'].read(65537)
+                current = client.get_object(Bucket=bucket, Key=manifest_key)['Body'].read(65537)
                 if run_id.encode() in current:
                     if window:
-                        client.put_object(Bucket=BUCKET, Key=manifest_key, Body=make_manifest(window, ended=True).encode(),
+                        client.put_object(Bucket=bucket, Key=manifest_key, Body=make_manifest(window, ended=True).encode(),
                                           ContentType='application/vnd.apple.mpegurl', CacheControl='public,max-age=1,s-maxage=2')
                     # Give already-started segment downloads a bounded grace period.
                     time.sleep(12)
-                    client.delete_object(Bucket=BUCKET, Key=manifest_key)
+                    client.delete_object(Bucket=bucket, Key=manifest_key)
             except ClientError as exc:
                 if exc.response.get('Error', {}).get('Code') not in ('NoSuchKey', '404'):
                     report['cleanupManifestErrorClass'] = type(exc).__name__
@@ -232,11 +253,11 @@ def main(args):
                 report['cleanupManifestErrorClass'] = type(exc).__name__
             try:
                 if owned_keys:
-                    removed = client.delete_objects(Bucket=BUCKET,
+                    removed = client.delete_objects(Bucket=bucket,
                                                      Delete={'Objects': [{'Key': key} for key in owned_keys], 'Quiet': True})
                     if removed.get('Errors'):
                         report['cleanupObjectErrorCount'] = len(removed['Errors'])
-                client.delete_object(Bucket=BUCKET, Key=lock_key)
+                client.delete_object(Bucket=bucket, Key=lock_key)
                 report['cleanupComplete'] = not any(key.startswith('cleanup') and key != 'cleanupComplete'
                                                     for key in report)
             except Exception as exc:
@@ -250,7 +271,10 @@ def main(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--duration', type=int, default=180)
-    parser.add_argument('--delivery-host', choices=DELIVERY_HOSTS, default=DELIVERY_HOSTS[0])
+    parser.add_argument('--delivery-host', required=True,
+                        help='Staging playback hostname. Production hosts require --known-canary.')
+    parser.add_argument('--known-canary', action='store_true',
+                        help='One-client PRB10A pilot only. Load runs must not set this.')
     parser.add_argument('--control-stdin',action='store_true')
     args = parser.parse_args()
     if not 12 <= args.duration <= 864 or args.duration % SEGMENT_SECONDS:

@@ -8,7 +8,11 @@ import argparse
 import json
 import pathlib
 import subprocess
+import sys
 import time
+
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from load_target_policy import require_staging_delivery_host, require_staging_ssh_host
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 IDENTITY='C:/Users/maria/.ssh/qsession_deploy_ed25519'
@@ -35,12 +39,20 @@ def send(node,tokens):
 if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inventory',type=pathlib.Path,default=ROOT/'release/load-generators-active-20261018.json')
-    parser.add_argument('--delivery-host',choices=('qsession-live.patriciomoyano11.workers.dev','live.qsession.org'),default='qsession-live.patriciomoyano11.workers.dev')
+    parser.add_argument('--delivery-host', required=True,
+                        help='Staging playback hostname. Production hosts are refused.')
+    parser.add_argument('--admission-host', required=True,
+                        help='Staging API IPv4. The production app server is refused.')
     parser.add_argument('--output',type=pathlib.Path,default=ROOT/'release/load-run-inventory-20261018.json')
     parser.add_argument('--mint-report',type=pathlib.Path,default=ROOT/'release/load-admission-mint-20261018.json')
     parser.add_argument('--clients', type=int, default=10000)
     parser.add_argument('--minimum-remaining-seconds', type=int, default=300)
     args=parser.parse_args()
+    try:
+        delivery_host = require_staging_delivery_host(args.delivery_host)
+        admission_host = require_staging_ssh_host(args.admission_host)
+    except ValueError as error:
+        raise SystemExit(str(error))
     if not 300<=args.minimum_remaining_seconds<=900:raise SystemExit('Invalid technical lease duration bound')
     inventory=json.loads(args.inventory.read_text(encoding='utf-8-sig'))
     nodes=inventory['generators']
@@ -58,7 +70,7 @@ if __name__=='__main__':
     encoded=base64.b64encode(code.encode()).decode()
     expression="eval(Buffer.from('"+encoded+"','base64').toString())"
     command="docker exec --env QSESSION_PROBE_TEST_CLIENTS="+str(args.clients)+" --env QSESSION_PROBE_MIN_REMAINING_SECONDS="+str(args.minimum_remaining_seconds)+" qsession-qsession-app-1 node -e \""+expression+"\""
-    secret_result=subprocess.run(BASE+['root@104.238.137.144',command],capture_output=True,timeout=30)
+    secret_result=subprocess.run(BASE+['root@'+admission_host,command],capture_output=True,timeout=30)
     if secret_result.returncode:raise SystemExit('Probe mint failed; private output suppressed')
     private=json.loads(secret_result.stdout)
     if len(private['tokens'])!=args.clients or private['active']!=args.clients:raise SystemExit('Incorrect lease total')
@@ -69,9 +81,9 @@ if __name__=='__main__':
         for task in tasks:task.result()
     inventory['runId']='qsession-probe-'+str(args.clients)+'-'+str(int(time.time()))
     inventory['startAtUnix']=int(time.time())+25
-    inventory['deliveryHost']=args.delivery_host
+    inventory['deliveryHost']=delivery_host
     args.output.write_text(json.dumps(inventory,indent=2),encoding='utf-8')
     public={k:v for k,v in private.items() if k not in ('tokens','scope')}
-    public.update(startAtUnix=inventory['startAtUnix'],generators=len(nodes),clientsPerNode=[n['clients'] for n in nodes],namespace='PRB10A',deliveryHost=args.delivery_host,certifiesProductionCapacity=False)
+    public.update(startAtUnix=inventory['startAtUnix'],generators=len(nodes),clientsPerNode=[n['clients'] for n in nodes],namespace='PRB10A',deliveryHost=delivery_host,certifiesProductionCapacity=False)
     args.mint_report.write_text(json.dumps(public,indent=2),encoding='utf-8')
     print(json.dumps(public),flush=True)

@@ -68,6 +68,7 @@ function harness(options = {}) {
   const env = {
     QSESSION_ADMISSION_ROOM: 'JNTUBY', QSESSION_ADMISSION_SECRET: SECRET,
     QSESSION_ADMISSION_API: 'https://qsession.org/api/broadcast/admissions/check',
+    QSESSION_ADMISSION_BACKEND: options.backend || 'required',
     QSESSION_LIVE: {
       async get(key, getOptions) {
         calls.gets.push({key, options: getOptions});
@@ -80,7 +81,7 @@ function harness(options = {}) {
   };
   class ClockDate extends Date { static now() { return clock.now; } }
   const scope = vm.createContext({
-    Request, Response, Headers, URL, TextEncoder, TextDecoder, Uint8Array, AbortController,
+    Request, Response, Headers, URL, TextEncoder, TextDecoder, Uint8Array, Uint32Array, AbortController, ReadableStream, Blob,
     Date: ClockDate, crypto: crypto.webcrypto, atob, setTimeout: options.setTimeout || setTimeout, clearTimeout,
     caches: {default: cache},
     console: Object.fromEntries(['log', 'info', 'warn', 'error', 'debug'].map(method => [method, (...values) => {
@@ -662,8 +663,9 @@ test('cache write rejection falls back to storage without caching a personalized
   const response = await h.request('segment_01.ts', h.token(), {headers: {Range: 'bytes=2-5'}});
   assert.equal(response.status, 206);
   assert.equal(await response.text(), '2345');
-  assert.equal(h.calls.gets.length, 2);
-  assert.equal(h.calls.heads.length, 1);
+  assert.equal(h.calls.gets.length, 1);
+  assert.equal(h.calls.heads.length, 0);
+  assert.equal(response.headers.get('X-QSession-Cache-Fill-State'), 'verified');
   assert.equal([...cache.entries.keys()].filter(key => key.includes('/live/')).length, 0);
 });
 
@@ -779,6 +781,36 @@ test('a token expiring during a fresh manifest read cannot receive the recovered
   assert.ok(!(await response.text()).includes('#EXTM3U'));
 });
 
+
+test('a valid token plays while Redis is down and an expired token never reaches storage', async () => {
+  const h = harness({backend: 'token', api: async () => { throw new Error('redis down'); }});
+  const token = h.token();
+  const played = await h.request('segment_01.ts', token);
+  assert.equal(played.status, 200);
+  assert.equal(await played.text(), '0123456789');
+  assert.equal(played.headers.get('X-QSession-Admission-Phase'), 'token');
+  assert.equal(h.calls.api.length, 0);
+  assert.equal(h.calls.gets.length, 1);
+  const expired = h.token({exp: Math.floor(h.clock.now / 1000)});
+  assert.equal((await h.request('segment_01.ts', expired)).status, 403);
+  const forged = `${token}x`;
+  assert.equal((await h.request('segment_01.ts', forged)).status, 403);
+  assert.equal(h.calls.gets.length, 1);
+  assert.equal(h.calls.api.length, 0);
+});
+
+test('a rejected cache write still delivers the verified segment from one read', async () => {
+  const h = harness({backend: 'token', cache: {
+    async match() { return undefined; },
+    async put(_request, response) { await response.arrayBuffer(); throw new Error('cache rejected'); },
+  }});
+  const response = await h.request('segment_01.ts', h.token());
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), '0123456789');
+  assert.equal(response.headers.get('X-QSession-Cache-Fill-State'), 'verified');
+  assert.equal(h.calls.gets.length, 1);
+  assert.equal(h.calls.api.length, 0);
+});
 
 test('fixed admission table: full fingerprints, bounded collisions and unchanged absolute expiry', () => {
   const h = harness();
