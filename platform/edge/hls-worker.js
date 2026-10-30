@@ -180,21 +180,39 @@ function admissionErrorHeaders(phase, attempts) {
     'X-QSession-Admission-Stats': Object.entries(admissionStats).map(([name, value]) => `${name}=${value}`).join(';')};
 }
 
+function admissionBackendRequired(env) {
+  // Playback trusts the signed token unless an operator explicitly asks every
+  // segment to renew the Redis lease. Revocation then waits for token expiry.
+  return String(env.QSESSION_ADMISSION_BACKEND || '').trim() === 'required';
+}
+
 async function checkAdmission(request, env, context, room, objectKey) {
   const secret = String(env.QSESSION_ADMISSION_SECRET || '');
-  let api;
-  try {
-    api = new URL(env.QSESSION_ADMISSION_API);
-    if (api.protocol !== 'https:' || api.username || api.password || encoder.encode(secret).byteLength < 32) throw new Error('Invalid configuration');
-  } catch {
+  const stateless = !admissionBackendRequired(env);
+  if (encoder.encode(secret).byteLength < 32) {
     return {error: textResponse(request, 503, 'La admisión de espectadores no está disponible')};
+  }
+  let api;
+  if (!stateless) {
+    try {
+      api = new URL(env.QSESSION_ADMISSION_API);
+      if (api.protocol !== 'https:' || api.username || api.password) throw new Error('Invalid configuration');
+    } catch {
+      return {error: textResponse(request, 503, 'La admisión de espectadores no está disponible')};
+    }
   }
   const url = new URL(request.url);
   const tokens = url.searchParams.getAll('qsat');
   const token = tokens.length === 1 ? tokens[0] : '';
   // Every request verifies its own signature, scope and expiry before joining.
   const payload = await verifyToken(token, secret, room, objectKey);
-  if (!payload) return {error: textResponse(request, 403, 'Acceso de reproducción no válido o vencido')};
+  if (!payload || payload.exp <= Math.floor(Date.now() / 1000)) {
+    return {error: textResponse(request, 403, 'Acceso de reproducción no válido o vencido')};
+  }
+  if (stateless) {
+    countAdmission('token');
+    return {token, payload, admissionMode: 'token'};
+  }
   const digest = await crypto.subtle.digest('SHA-256', encoder.encode(
     `${api.href}\n${payload.code}\n${payload.prefix}\n${payload.generation ?? ''}\n${payload.lease}\n${secret}`));
   const fingerprint = new Uint32Array(digest);
@@ -499,6 +517,57 @@ async function sharedMediaOperation(operations, identity, context, perform) {
   finally { entry.waiters--; cacheFillWaiters--; }
 }
 
+function verifiedMediaHeaders(object, isPlaylist, size) {
+  const headers = new Headers(corsHeaders());
+  object.writeHttpMetadata?.(headers);
+  if (!headers.get('Content-Type')) {
+    headers.set('Content-Type', isPlaylist ? 'application/vnd.apple.mpegurl' : 'application/octet-stream');
+  }
+  headers.set('ETag', object.httpEtag || '');
+  headers.set('Content-Length', String(size));
+  headers.set('Accept-Ranges', 'bytes');
+  headers.set('X-Content-Type-Options', 'nosniff');
+  headers.set('Cache-Control', isPlaylist ? 'public, max-age=1, s-maxage=2, must-revalidate' : 'public, max-age=86400, immutable');
+  return headers;
+}
+
+async function readVerifiedBytes(object, isPlaylist, signal) {
+  const maximum = isPlaylist ? 65536 : SHARED_OBJECT_LIMIT;
+  if (!Number.isSafeInteger(object.size) || object.size <= 0 || object.size > maximum || !object.body) return null;
+  if (signal.aborted) throw mediaError('edge-fill-timeout');
+  let bytes;
+  try { bytes = new Uint8Array(await new Response(object.body).arrayBuffer()); }
+  catch { throw mediaError('storage-body-read'); }
+  if (signal.aborted) throw mediaError('edge-fill-timeout');
+  if (bytes.byteLength !== object.size) throw mediaError('storage-incomplete');
+  return bytes;
+}
+
+function responseFromBytes(request, fill, isPlaylist) {
+  const size = fill.bytes.byteLength;
+  let range = null;
+  if (!isPlaylist && request.method === 'GET' && request.headers.has('Range')) {
+    range = parseRange(request.headers.get('Range'), size);
+    if (!range) return textResponse(request, 416, 'Rango no válido', {'Content-Range': `bytes */${size}`, 'Accept-Ranges': 'bytes'});
+  }
+  const start = range ? range.offset : 0;
+  const length = range ? range.length : size;
+  const headers = new Headers(fill.headers);
+  headers.set('Content-Length', String(length));
+  if (range) headers.set('Content-Range', `bytes ${start}-${start + length - 1}/${size}`);
+  let body = null;
+  if (request.method !== 'HEAD') {
+    let offset = start;
+    body = new ReadableStream({pull(controller) {
+      if (offset >= start + length) { controller.close(); return; }
+      const end = Math.min(start + length, offset + 8192);
+      controller.enqueue(fill.bytes.subarray(offset, end));
+      offset = end;
+    }}, {highWaterMark: 0});
+  }
+  return new Response(body, {status: range ? 206 : 200, headers});
+}
+
 async function fillObjectCache(cache, cacheKey, env, key, isPlaylist, context, readObject = async () => {
   try { return await env.QSESSION_LIVE.get(key); }
   catch { throw mediaError('storage-read'); }
@@ -511,6 +580,24 @@ async function fillObjectCache(cache, cacheKey, env, key, isPlaylist, context, r
       object = await readObject(signal);
       if (signal.aborted) throw mediaError('edge-fill-timeout');
       if (!object) return fillResult('missing');
+      const bytes = await readVerifiedBytes(object, isPlaylist, signal);
+      if (bytes) {
+        const headers = verifiedMediaHeaders(object, isPlaylist, bytes.byteLength);
+        let stored = false;
+        try {
+          if (signal.aborted) throw mediaError('edge-fill-timeout');
+          await cache.put(cacheKey, new Response(new Uint8Array(bytes), {status: 200, headers}));
+          const retained = await cache.match(cacheKey);
+          stored = Boolean(retained && retained.status === 200 && Number(retained.headers.get('Content-Length')) === bytes.byteLength);
+          cancelBody(retained?.body);
+        } catch (error) {
+          if (signal.aborted || error?.qsessionMediaFailure === 'edge-fill-timeout') throw error;
+          stored = false;
+        }
+        // Cache retention is optional once the bytes are verified. Waiters share
+        // this one copy; a discarded write must not become a 503.
+        return fillResult(stored ? 'stored' : 'verified', {bytes, headers});
+      }
       // Only canonical bytes enter the cache. Personalized manifests never do.
       response = storageResponse(object, isPlaylist, null, context);
       await cache.put(cacheKey, response);
@@ -927,6 +1014,7 @@ async function serveResponse(request, response, admission, isPlaylist, hit, fill
   if (operationState) headers.set('X-QSession-Cache-Fill-State', operationState);
   let body = response.body;
   if (admission) {
+    if (admission.admissionMode === 'token') headers.set('X-QSession-Admission-Phase', 'token');
     if (['timeout', 'network', 'gateway'].includes(admission.admissionRecovery)) {
       headers.set('X-QSession-Admission-Recovery', admission.admissionRecovery);
     }
@@ -1036,6 +1124,10 @@ export default {
               writeHttpMetadata(target) { target.set('Content-Type', response.headers.get('Content-Type') || 'application/octet-stream'); }};
           };
           const fill = await fillObjectCache(cache, cacheKey, env, key, isPlaylist, context, readShared);
+          if (fill.bytes) {
+            return serveResponse(request, responseFromBytes(request, fill, isPlaylist), admission, isPlaylist, false,
+              fill.stored ? 'shared-edge' : 'not-retained', recoverManifest, fill.stored ? fill.state : 'verified');
+          }
           if (!fill.stored) return fillFailureResponse(request, fill);
           if (fill.stored) {
             const warmed = await cachedObject(cache, cacheKey, request, ranged);
@@ -1075,7 +1167,11 @@ export default {
       const cached = await cachedObject(cache, cacheKey, request, hasRange);
       if (cached) return serveResponse(request, cached, admission, isPlaylist, true, undefined, recoverManifest);
       const fill = await fillObjectCache(cache, cacheKey, env, key, isPlaylist, context);
-      fillState = fill.state;
+      fillState = fill.bytes && !fill.stored ? 'not-retained' : fill.state;
+      if (fill.bytes) {
+        return serveResponse(request, responseFromBytes(request, fill, isPlaylist), admission, isPlaylist, false,
+          fillState, recoverManifest, fill.stored ? 'stored' : 'verified');
+      }
       if (fill.missing) return textResponse(request, 404, 'La señal todavía no está disponible');
       if (!fill.stored && !(fill.failed && fill.code === 'edge-fill')) return fillFailureResponse(request, fill);
       if (fill.stored) {

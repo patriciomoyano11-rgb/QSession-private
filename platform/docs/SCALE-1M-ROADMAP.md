@@ -75,6 +75,8 @@ Se implementó lo que un test local puede comprobar. El Worker no se modificó.
 - El cliente de carga, el orquestador (también el script que corre dentro del generador), el publicador sintético, el minteo de concesiones, el observador Redis y la limpieza exigen ese destino. `run-custom-domain-load.py` corta antes de cualquier SSH si faltan `--delivery-host`, `--encoder-host` y `--api-host` de staging.
 - El piloto de un cliente conserva `--known-canary` / `allow_known_canary=True` para los dos hostnames históricos de PRB10A. Los comandos de carga no lo activan.
 - El agregador añade `steadyShortfallClass`: `none`, `endpoint-sample`, `interior-or-sustained`, `incomplete-window` o `no-steady-samples`. El aprobado exige todas las muestras interiores (del segundo 40 al penúltimo). Una o las dos muestras extremas pueden ir cortas. Si falta un slot, aunque sea un extremo, la tanda falla.
+- El Worker, por defecto, acepta el segmento si el token HMAC es válido y no venció. No llama a Redis en cada GET. `QSESSION_ADMISSION_BACKEND=required` recupera la comprobación anterior. Una expulsión espera a que venza el token. Un token inválido o vencido sigue en 403 y no lee R2.
+- Si la caché rechaza la escritura pero el cuerpo ya se leyó completo (hasta 8 MiB el segmento, 64 KiB el índice), la respuesta sale igual, con `X-QSession-Cache-Fill-State: verified`. Un cuerpo a medias sigue siendo 503.
 
 Pruebas locales: `python3 -m unittest discover -s test -p 'test_hls_*.py'` y `test_load_target_policy.py` desde `platform/`. No sustituyen una carga.
 
