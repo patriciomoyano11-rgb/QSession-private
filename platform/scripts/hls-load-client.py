@@ -31,10 +31,45 @@ try:
 except ImportError:  # Allow stdlib parser tests on Windows.
     resource = None
 
-DELIVERY_HOSTS = ('qsession-live.patriciomoyano11.workers.dev', 'live.qsession.org')
-HOST = DELIVERY_HOSTS[0]
 PREFIX = '/live/PRB10A-hWrdBkirH_2yHmZ9lp/'
-URL = 'https://' + HOST + PREFIX + 'index.m3u8'
+# Populated only after an explicit staging host is accepted. There is no
+# production default: a missing or production host must fail before any request.
+HOST = None
+URL = None
+# One-client pilots may name these. The load command line never does.
+KNOWN_CANARY_HOSTS = frozenset({
+    'live.qsession.org',
+    'qsession-live.patriciomoyano11.workers.dev',
+})
+
+
+def require_staging_delivery_host(host):
+    """Refuse production playback names. Safe to copy onto a load generator.
+
+    The body uses only its arguments and the stdlib so the orchestrator can
+    paste this function into the remote controller. The uploaded client is a
+    single file and must not import a sibling module.
+    """
+    import re as _re
+    if type(host) is not str:
+        raise ValueError('A staging delivery host is required')
+    normalized = host.strip().lower().rstrip('.')
+    if not _re.fullmatch(r'(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}', normalized):
+        raise ValueError('A staging delivery host is required')
+    production = {
+        'live.qsession.org',
+        'www.qsession.org',
+        'qsession.org',
+        'media.qsession.org',
+        'qsession-live.patriciomoyano11.workers.dev',
+    }
+    if normalized in production or normalized.endswith('.qsession.org'):
+        raise ValueError('Production delivery hosts are refused; pass a staging hostname')
+    labels = normalized.split('.')
+    if not any(label == 'staging' or label.startswith('staging-')
+               or label.endswith('-staging') or '-staging-' in label for label in labels):
+        raise ValueError('Staging delivery host must include a staging DNS label')
+    return normalized
 SEGMENT_SECONDS = 6
 RECENT_MEDIA_SECONDS = 12
 STALL_SECONDS = 18
@@ -67,12 +102,18 @@ STDLIB_CONNECTION_LOCK = threading.Lock()
 STDLIB_HTTP_WORKERS = 96
 
 
-def configure_delivery_host(host):
-    """Select only an owned endpoint; never forward probe leases elsewhere."""
-    if host not in DELIVERY_HOSTS:
-        raise ValueError('Delivery host is outside the isolated test scope')
+def configure_delivery_host(host, *, allow_known_canary=False):
+    """Select a staging playback host. Load CLIs cannot opt into production.
+
+    ``allow_known_canary`` exists for the one-client PRB10A pilot. The load
+    client command line never sets it.
+    """
+    if allow_known_canary and host in KNOWN_CANARY_HOSTS:
+        selected = host
+    else:
+        selected = require_staging_delivery_host(host)
     global HOST, URL
-    HOST = host
+    HOST = selected
     URL = 'https://' + HOST + PREFIX + 'index.m3u8'
 
 
@@ -1006,7 +1047,8 @@ if __name__ == '__main__':
                         help='Coordinate generators at a Unix time up to 180 seconds ahead')
     parser.add_argument('--progress', action='store_true')
     parser.add_argument('--transport',choices=('aiohttp','stdlib','http2'),default='aiohttp')
-    parser.add_argument('--delivery-host',choices=DELIVERY_HOSTS,default=DELIVERY_HOSTS[0])
+    parser.add_argument('--delivery-host', required=True,
+                        help='Staging playback hostname. Production hosts are refused.')
     parser.add_argument('--tokens-file', type=pathlib.Path,
                         help='Optional root-only JSON array of one unique qsat lease token per client')
     args = parser.parse_args()

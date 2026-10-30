@@ -75,19 +75,47 @@ class DeliveryAggregation(unittest.TestCase):
 
     def validated_fixture(self):
         inventory,_=self.fixture()
+        inventory['deliveryHost']='live.staging.qsession.test'
         for n,node in enumerate(inventory['generators']):
             node.update(id=str(uuid.UUID(int=n+1)),ownedForThisTest=True)
         return inventory
 
-    def test_custom_domain_is_retained_in_validated_inventory(self):
+    def test_staging_host_is_retained_and_production_hosts_are_refused(self):
         inventory=self.validated_fixture()
-        inventory['deliveryHost']='live.qsession.org'
-        self.assertEqual(module.validate_inventory(inventory,now=990)['deliveryHost'],'live.qsession.org')
+        self.assertEqual(module.validate_inventory(inventory,now=990)['deliveryHost'],'live.staging.qsession.test')
+        for host in ('live.qsession.org', 'qsession-live.patriciomoyano11.workers.dev',
+                     'staging.qsession.org', 'live.qsession.org.untrusted.test', None):
+            inventory['deliveryHost']=host
+            with self.subTest(host=host), self.assertRaises(ValueError):
+                module.validate_inventory(inventory,now=990)
 
-    def test_arbitrary_delivery_hosts_are_rejected(self):
-        inventory=self.validated_fixture()
-        inventory['deliveryHost']='live.qsession.org.untrusted.test'
-        with self.assertRaises(ValueError):module.validate_inventory(inventory,now=990)
+    def test_one_endpoint_sample_shortfall_is_labeled_without_relaxing_the_gate(self):
+        inventory={'runId':'bounded-test-1500','startAtUnix':1000,'holdSeconds':60,'generators':[]}
+        results=[]
+        node={'id':'0','label':'qsession-load-test-0','ip':'8.8.8.1','clients':1500,'logicalCpuCount':8}
+        inventory['generators'].append(node)
+        workers=[]
+        for index in range(4):
+            count=375
+            samples=[{'observedAtUnix':1000+t,'elapsed':t,'recentMediaClients':count,'activeClients':count,
+                      'processCpuPercent':20,'systemCpuPercent':20} for t in range(38,90,2)]
+            workers.append({'index':index,'exitCode':0,'report':{'requestedClients':count,
+                'distinctLeaseTokensPresented':count,'deliveryCheckPassed':True,'samples':samples}})
+        workers[0]['report']['samples'][0]['recentMediaClients']=359
+        results.append({'nodeReport':{'runId':inventory['runId'],'startAtUnix':1000,'workers':workers}})
+        report=module.aggregate(inventory,results)
+        self.assertEqual(report['requestedClients'],1500)
+        self.assertEqual(report['steadyConcurrentRecentMediaMinimum'],1484)
+        self.assertEqual(report['longestCommonFullMediaSpanSeconds'],48)
+        self.assertEqual(report['requiredSteadySpanSeconds'],50)
+        self.assertEqual(report['steadyShortfallClass'],'endpoint-sample')
+        self.assertFalse(report['httpDeliveryChecksPassed'])
+        workers[0]['report']['samples'][0]['recentMediaClients']=375
+        workers[0]['report']['samples'][10]['recentMediaClients']=359
+        interior=module.aggregate(inventory,results)
+        self.assertEqual(interior['steadyShortfallClass'],'interior-or-sustained')
+        self.assertLess(interior['longestCommonFullMediaSpanSeconds'],48)
+        self.assertFalse(interior['httpDeliveryChecksPassed'])
 
     def test_only_explicit_supported_transport_reaches_remote_runner(self):
         inventory=self.validated_fixture()

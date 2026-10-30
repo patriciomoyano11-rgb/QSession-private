@@ -16,6 +16,9 @@ import sys
 import threading
 import time
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from load_target_policy import require_staging_delivery_host, require_staging_ssh_host
+
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 SCRIPTS=ROOT/'platform/scripts'
 RELEASE=ROOT/'release'
@@ -127,12 +130,13 @@ def validate_retirement(inventory, proof, now=None):
             'verifiedGenerators': len(inventory['generators']), 'scopeFingerprint': expected}
 
 
-def retirement_preflight(inventory):
-    # This guard is on a permanent host. It outlives this process and the chat.
+def retirement_preflight(inventory, encoder_host):
+    # The guard runs on the staging encoder, never on a permanent production host.
+    encoder_host = require_staging_ssh_host(encoder_host)
     command = ('/usr/bin/python3 /opt/qsession-load-guard/retire-load-generators.py '
                '--scope /etc/qsession-load-guard/scope.json '
                '--key-file /etc/qsession-load-guard/vultr.key --preflight')
-    result = subprocess.run(SSH + ['root@45.77.192.82', command],
+    result = subprocess.run(SSH + ['root@'+encoder_host, command],
                             capture_output=True, text=True, timeout=45)
     if result.returncode:
         raise ValueError('Independent retirement service unavailable; no load started')
@@ -305,6 +309,10 @@ def reserve_full_media_execution(inventory, clients, hold, reconnect, transport,
 
 
 def main(args):
+    # Refuse production before any SSH, mint, or origin publication.
+    delivery_host = require_staging_delivery_host(getattr(args, 'delivery_host', None))
+    encoder_host = require_staging_ssh_host(getattr(args, 'encoder_host', None))
+    api_host = require_staging_ssh_host(getattr(args, 'api_host', None))
     import importlib.util
     candidate_spec=importlib.util.spec_from_file_location('candidate_gate',ROOT/'platform/scripts/hls_candidate_readiness.py')
     candidate_gate=importlib.util.module_from_spec(candidate_spec);candidate_spec.loader.exec_module(candidate_gate)
@@ -332,12 +340,12 @@ def main(args):
     if not len(nodes)*4<=args.clients<=10000 or (args.clients+len(nodes)-1)//len(nodes)>1500:
         raise ValueError('Client count exceeds the per-generator diagnostic bound')
     budget = validate_budget(inventory)
-    retirement = retirement_preflight(inventory)
+    retirement = retirement_preflight(inventory, encoder_host)
     if (reserve_media_diagnostic_execution(inventory,args.clients,hold,reconnect,args.transport,args.suffix,RELEASE)
             or reserve_full_media_execution(inventory,args.clients,hold,reconnect,args.transport,args.suffix,RELEASE,
                 candidate_proof,workers_per_node)):
         inventory_path.write_text(json.dumps(inventory,indent=2)+'\n',encoding='utf8')
-    report={'deliveryHost':'live.qsession.org','certifiesProductionCapacity':False,'startedAtUnix':time.time(),
+    report={'deliveryHost':delivery_host,'certifiesProductionCapacity':False,'startedAtUnix':time.time(),
             'budget':budget,'retirement':retirement,'httpTransport':args.transport,
             'holdSeconds':hold,'reconnectAfterSeconds':reconnect,'workersPerNode':workers_per_node}
     report['candidatePreparation']=candidate_proof
@@ -346,8 +354,8 @@ def main(args):
     origin=None;observer=None;thread=None;mint_attempted=False;load_started=False
     events=queue.Queue()
     try:
-        origin=subprocess.Popen(SSH+['root@45.77.192.82',
-            'timeout --signal=TERM --kill-after=20s '+str(origin_duration+50)+'s /opt/qsession-encoder/probe-venv/bin/python /opt/qsession-encoder/ops/synthetic-hls-origin.py --duration '+str(origin_duration)+' --delivery-host live.qsession.org --control-stdin'],
+        origin=subprocess.Popen(SSH+['root@'+encoder_host,
+            'timeout --signal=TERM --kill-after=20s '+str(origin_duration+50)+'s /opt/qsession-encoder/probe-venv/bin/python /opt/qsession-encoder/ops/synthetic-hls-origin.py --duration '+str(origin_duration)+' --delivery-host '+delivery_host+' --control-stdin'],
             stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True)
         def consume():
             for line in origin.stdout:
@@ -359,7 +367,8 @@ def main(args):
         report['originReady']=item;print(json.dumps({'originReady':True}),flush=True)
         mint_attempted=True
         result=subprocess.run([sys.executable,str(SCRIPTS/'distribute-probe-leases.py'),
-            '--inventory',str(inventory_path),'--delivery-host','live.qsession.org',
+            '--inventory',str(inventory_path),'--delivery-host',delivery_host,
+            '--admission-host',api_host,
             '--clients',str(args.clients),
             '--minimum-remaining-seconds',str(max(300,duration+150)),
             '--output',str(artifact('load-run-custom-domain')),
@@ -384,6 +393,7 @@ def main(args):
         for node in run_inventory['generators']:node['workersPerNode']=workers_per_node
         run_inventory_path.write_text(json.dumps(run_inventory,indent=2)+'\n',encoding='utf-8')
         observer=subprocess.Popen([sys.executable,str(SCRIPTS/'observe-distributed-probe.py'),
+            '--api-host',api_host,
             '--output',str(artifact('load-redis-custom-domain')),'--duration',str(max(125,duration+35))],
             stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True)
         load_stem='hls-10000-custom-domain' if args.clients==10000 else 'hls-diagnostic-custom-domain'
@@ -405,6 +415,7 @@ def main(args):
         if mint_attempted:
             try:
                 cleanup=subprocess.run([sys.executable,str(SCRIPTS/'cleanup-distributed-probe.py'),
+                    '--api-host',api_host,
                     '--inventory',str(inventory_path),'--expected-clients',str(args.clients)],capture_output=True,text=True,timeout=65)
                 report['leaseCleanupExitCode']=cleanup.returncode
                 if cleanup.returncode==0:
@@ -442,4 +453,10 @@ if __name__=='__main__':
     parser.add_argument('--hold',type=int,default=60)
     parser.add_argument('--reconnect-after',type=int,default=0)
     parser.add_argument('--workers-per-node',type=int,choices=(4,8),default=4)
+    parser.add_argument('--delivery-host', required=True,
+                        help='Staging playback hostname. Production hosts are refused.')
+    parser.add_argument('--encoder-host', required=True,
+                        help='Staging encoder IPv4. The permanent production servers are refused.')
+    parser.add_argument('--api-host', required=True,
+                        help='Staging API IPv4 used to mint and observe leases.')
     raise SystemExit(main(parser.parse_args()))

@@ -165,9 +165,10 @@ class OriginControlTests(unittest.TestCase):
             'botocore.config':types.SimpleNamespace(Config=lambda **kwargs:None),
             'botocore.exceptions':types.SimpleNamespace(ClientError=ClientError)}
         command='' if reason is None else json.dumps({'command':'stop','runId':RUN,'reason':reason})+'\n'
-        args=types.SimpleNamespace(delivery_host='live.qsession.org',duration=12,control_stdin=control)
+        args=types.SimpleNamespace(delivery_host='live.staging.qsession.test',duration=12,control_stdin=control)
         with mock.patch.dict(sys.modules,modules),mock.patch.object(origin,'read_credentials',return_value={
-                'accessKey':'offline','secretKey':'offline'}),mock.patch.object(origin.secrets,'token_hex',return_value=RUN), \
+                'accessKey':'offline','secretKey':'offline','endpoint':'https://staging.r2.invalid',
+                'bucket':'qsession-live-staging'}),mock.patch.object(origin.secrets,'token_hex',return_value=RUN), \
                 mock.patch.object(origin.subprocess,'run',side_effect=render), \
                 mock.patch.object(origin,'inspect_segment',return_value={'bytes':188}), \
                 mock.patch.object(origin,'signal',types.SimpleNamespace(SIGINT=2,SIGTERM=15,SIGALRM=14,
@@ -227,7 +228,8 @@ class RunnerCleanupTests(unittest.TestCase):
                 'priorStageAccounting':{}}
             inventory_path=release/'inventory.json';inventory_path.write_text(json.dumps(inventory))
             args=types.SimpleNamespace(inventory=inventory_path,suffix='media-full-cleanup-offline',
-                clients=10000,hold=620,reconnect_after=240,workers_per_node=8,transport='aiohttp')
+                clients=10000,hold=620,reconnect_after=240,workers_per_node=8,transport='aiohttp',
+                delivery_host='live.staging.qsession.test',encoder_host='10.8.0.5',api_host='10.8.0.6')
             publisher=FakeOrigin();watcher=FakeObserver(stubborn);calls=[]
             def popen(command, **kwargs):
                 self.assertIs(kwargs['stdin'],subprocess.PIPE)

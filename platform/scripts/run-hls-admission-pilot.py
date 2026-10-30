@@ -57,7 +57,7 @@ def main(args):
     spec = importlib.util.spec_from_file_location('hls_client', RUNNER)
     runner = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(runner)
-    runner.configure_delivery_host(args.delivery_host)
+    runner.configure_delivery_host(args.delivery_host, allow_known_canary=True)
     tokens = runner.read_tokens(TOKENS, 1)
     token = tokens[0]
     url = runner.URL + '?' + urllib.parse.urlencode({'qsat': token})
@@ -73,7 +73,7 @@ def main(args):
             log = pathlib.Path(directory) / 'origin.jsonl'
             with open(log, 'xb') as output:
                 process = subprocess.Popen([str(PYTHON), str(ORIGIN), '--duration', '90',
-                                            '--delivery-host', args.delivery_host],
+                                            '--delivery-host', args.delivery_host, '--known-canary'],
                                            stdout=output, stderr=subprocess.DEVNULL, start_new_session=True)
                 ready = None
                 deadline = time.monotonic()+20

@@ -8,6 +8,7 @@ import argparse
 import collections
 import concurrent.futures
 import hashlib
+import inspect
 import ipaddress
 import json
 import math
@@ -19,12 +20,15 @@ import sys
 import time
 import uuid
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from load_target_policy import require_staging_delivery_host
+
 IDENTITY = 'C:/Users/maria/.ssh/qsession_deploy_ed25519'
 PROTECTED_IPS = {'104.238.137.144', '45.77.192.82', '45.77.118.43'}
-DELIVERY_HOSTS = ('qsession-live.patriciomoyano11.workers.dev', 'live.qsession.org')
 
 REMOTE_SCRIPT = r'''
 import hashlib, json, math, os, pathlib, platform, runpy, signal, ssl, stat, subprocess, sys, time
+''' + inspect.getsource(require_staging_delivery_host) + r'''
 os.umask(0o077)
 run_id, start_at, clients = sys.argv[1], float(sys.argv[2]), int(sys.argv[3])
 delivery_host = sys.argv[4]
@@ -44,8 +48,10 @@ if not 60 <= hold <= 620 or (reconnect and not 30 < reconnect < 30 + hold - 18):
 if reconnect and transport != 'aiohttp':
     raise SystemExit('Session restart requires aiohttp')
 traffic_seconds = 30 + hold
-if delivery_host not in ('qsession-live.patriciomoyano11.workers.dev', 'live.qsession.org'):
-    raise SystemExit('Delivery host is outside the isolated test scope')
+try:
+    delivery_host = require_staging_delivery_host(delivery_host)
+except ValueError as error:
+    raise SystemExit(str(error))
 if transport not in ('stdlib', 'aiohttp', 'http2'):
     raise SystemExit('Unsupported HTTP transport')
 if not 1 <= clients <= 1500:
@@ -218,13 +224,11 @@ def validate_inventory(inventory, now=None):
     now = time.time() if now is None else now
     run_id, start_at = inventory.get('runId'), inventory.get('startAtUnix')
     nodes = inventory.get('generators')
-    delivery_host = inventory.get('deliveryHost', DELIVERY_HOSTS[0])
+    delivery_host = require_staging_delivery_host(inventory.get('deliveryHost'))
     transport = inventory.get('httpTransport', 'stdlib')
     hold, reconnect = timing(inventory)
     if transport not in ('stdlib', 'aiohttp', 'http2'):
         raise ValueError('Unsupported HTTP transport')
-    if delivery_host not in DELIVERY_HOSTS:
-        raise ValueError('Delivery host is outside the isolated test scope')
     if not isinstance(run_id, str) or not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_-]{7,63}', run_id):
         raise ValueError('Inventory runId must be a bounded safe name')
     if not isinstance(start_at, (int, float)) or not math.isfinite(start_at) or not 0 <= start_at-now <= 180:
@@ -260,6 +264,24 @@ def validate_inventory(inventory, now=None):
     return {'runId':run_id,'startAtUnix':start_at,'deliveryHost':delivery_host,'httpTransport':transport,
             'holdSeconds':hold,'reconnectAfterSeconds':reconnect,
             'generators':[{key:node[key] for key in keys if key in node} for node in nodes]}
+
+
+def classify_steady_shortfall(steady, expected_clients):
+    """Label a failed continuity window without changing the pass rule.
+
+    A single short sample on the first or last steady slot is the signature
+    of the 1,500-client result: the aligned span drops by one 2-second step.
+    An interior dip is a different failure and stays labeled as such.
+    """
+    if not steady:
+        return 'no-steady-samples'
+    short = [item for item in steady if item.get('concurrentRecentMediaClients') != expected_clients]
+    if not short:
+        return 'none'
+    endpoints = {steady[0]['elapsedSeconds'], steady[-1]['elapsedSeconds']}
+    if len(short) <= 2 and all(item['elapsedSeconds'] in endpoints for item in short):
+        return 'endpoint-sample'
+    return 'interior-or-sustained'
 
 
 def longest_consecutive_run(indices):
@@ -431,6 +453,7 @@ def aggregate(inventory, results):
             'steadyConcurrentRecentMediaMinimum':min((item['concurrentRecentMediaClients'] for item in steady),default=0),
             'completeSteadySamples':len(steady),'expectedSteadySamples':expected_steady,
             'holdSeconds':hold,'steadyWindowStartSeconds':38,'steadyWindowEndSeconds':steady_end,
+            'steadyShortfallClass':classify_steady_shortfall(steady, expected_clients),
             'requiredSteadySpanSeconds':steady_end-38,'reconnectAfterSeconds':reconnect,
             'longestCommonFullMediaSpanSeconds':2*(longest[-1]-longest[0]) if longest else 0,
             'longestCommonFullMediaFirstAtSeconds':longest[0]*2 if longest else None,
@@ -446,7 +469,7 @@ def run_node(node, inventory, provenance=None):
     command = ['ssh','-T','-i',IDENTITY,'-o','BatchMode=yes','-o','IdentitiesOnly=yes',
                '-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12',
                'root@'+node['ip'],'/usr/bin/python3','-',inventory['runId'],str(inventory['startAtUnix']),str(node.get('clients',1250)),
-               inventory.get('deliveryHost', DELIVERY_HOSTS[0]), inventory.get('httpTransport', 'stdlib'),
+               inventory['deliveryHost'], inventory.get('httpTransport', 'stdlib'),
                str(timing(inventory)[0]), str(timing(inventory)[1]), str(workers_per_node(node)),
                str(node.get('logicalCpuCount',4)), provenance['clientSha256'],
                provenance['orchestrationSha256'], provenance['configurationSha256']]
@@ -487,6 +510,7 @@ def main(args):
     print(json.dumps({'report':str(args.output.resolve()),'requestedClients':summary['requestedClients'],
                       'peakConcurrentRecentMediaClients':summary['peakConcurrentRecentMediaClients'],
                       'longestCommonFullMediaSpanSeconds':summary['longestCommonFullMediaSpanSeconds'],
+                      'steadyShortfallClass':summary['steadyShortfallClass'],
                       'httpDeliveryChecksPassed':summary['httpDeliveryChecksPassed'],
                       'failureReasons':summary['failureReasons'],'certifiesProductionCapacity':False}),flush=True)
     return 0 if summary['httpDeliveryChecksPassed'] else 2

@@ -28,6 +28,7 @@ class GeneratorPartitions(unittest.TestCase):
                 'label':'qsession-load-local-test', 'ownedForThisTest':True,
                 'logicalCpuCount':8, 'clients':clients, 'workersPerNode':workers}
         inventory = {'runId':'local-generator-test', 'startAtUnix':1000, 'holdSeconds':620,
+                     'deliveryHost':'live.staging.qsession.test',
                      'httpTransport':'aiohttp', 'reconnectAfterSeconds':240, 'generators':[node]}
         reports = []
         for index, count in enumerate(orchestrator.client_splits(node)):
@@ -116,7 +117,7 @@ class GeneratorPartitions(unittest.TestCase):
 
     def test_remote_cpu_and_quota_rejection_happen_before_any_token_file_access(self):
         reviewed_source = b'reviewed-client-source'
-        args = ['-', 'local-generator-test', '1000', '1429', 'live.qsession.org', 'aiohttp',
+        args = ['-', 'local-generator-test', '1000', '1429', 'live.staging.qsession.test', 'aiohttp',
                 '620', '240', '8', '8', hashlib.sha256(reviewed_source).hexdigest(), 'b'*64, 'c'*64]
         for cpu_count, affinity_count, quota in ((4,4,{}), (8,4,{}),
                 (8,8,{'cpuQuotaObserved':True,'cpuQuotaCores':4}), (8,8,{'cpuQuotaObserved':False})):
@@ -248,7 +249,7 @@ class ProvenanceAndCounters(unittest.TestCase):
     def test_remote_eight_accepts_proven_full_root_unlimited_before_opening_tokens(self):
         evidence = self.inspect_cgroup(self.cgroup_fixture())
         reviewed_source = b'reviewed-client-source'
-        args = ['-', 'local-generator-test', '1000', '1429', 'live.qsession.org', 'aiohttp',
+        args = ['-', 'local-generator-test', '1000', '1429', 'live.staging.qsession.test', 'aiohttp',
                 '620', '240', '8', '8', hashlib.sha256(reviewed_source).hexdigest(), 'b'*64, 'c'*64]
         with mock.patch('sys.argv',args), mock.patch('os.cpu_count',return_value=8), \
              mock.patch('os.sched_getaffinity',return_value=set(range(8)),create=True), \
