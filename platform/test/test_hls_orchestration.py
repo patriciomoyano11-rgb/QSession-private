@@ -89,7 +89,7 @@ class DeliveryAggregation(unittest.TestCase):
             with self.subTest(host=host), self.assertRaises(ValueError):
                 module.validate_inventory(inventory,now=990)
 
-    def test_one_endpoint_sample_shortfall_is_labeled_without_relaxing_the_gate(self):
+    def test_endpoint_sample_shortfall_passes_and_an_interior_gap_fails(self):
         inventory={'runId':'bounded-test-1500','startAtUnix':1000,'holdSeconds':60,'generators':[]}
         results=[]
         node={'id':'0','label':'qsession-load-test-0','ip':'8.8.8.1','clients':1500,'logicalCpuCount':8}
@@ -108,14 +108,28 @@ class DeliveryAggregation(unittest.TestCase):
         self.assertEqual(report['steadyConcurrentRecentMediaMinimum'],1484)
         self.assertEqual(report['longestCommonFullMediaSpanSeconds'],48)
         self.assertEqual(report['requiredSteadySpanSeconds'],50)
+        self.assertEqual(report['requiredInteriorSpanSeconds'],46)
+        self.assertEqual(report['interiorWindowStartSeconds'],40)
+        self.assertEqual(report['interiorWindowEndSeconds'],86)
         self.assertEqual(report['steadyShortfallClass'],'endpoint-sample')
-        self.assertFalse(report['httpDeliveryChecksPassed'])
+        self.assertTrue(report['httpDeliveryChecksPassed'])
+        self.assertNotIn('incomplete_common_media_delivery_between_seconds_40_and_86', report['failureReasons'])
+        workers[0]['report']['samples'][-1]['recentMediaClients']=359
+        both_edges=module.aggregate(inventory,results)
+        self.assertEqual(both_edges['steadyShortfallClass'],'endpoint-sample')
+        self.assertTrue(both_edges['httpDeliveryChecksPassed'])
         workers[0]['report']['samples'][0]['recentMediaClients']=375
+        workers[0]['report']['samples'][-1]['recentMediaClients']=375
         workers[0]['report']['samples'][10]['recentMediaClients']=359
         interior=module.aggregate(inventory,results)
         self.assertEqual(interior['steadyShortfallClass'],'interior-or-sustained')
         self.assertLess(interior['longestCommonFullMediaSpanSeconds'],48)
         self.assertFalse(interior['httpDeliveryChecksPassed'])
+        workers[0]['report']['samples'][10]['recentMediaClients']=375
+        del workers[0]['report']['samples'][0]
+        missing=module.aggregate(inventory,results)
+        self.assertEqual(missing['steadyShortfallClass'],'incomplete-window')
+        self.assertFalse(missing['httpDeliveryChecksPassed'])
 
     def test_only_explicit_supported_transport_reaches_remote_runner(self):
         inventory=self.validated_fixture()

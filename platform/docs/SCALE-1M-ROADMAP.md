@@ -29,7 +29,7 @@ Un tramo de 48 s con una sola muestra en 1.484 encaja con una única muestra cor
 
 - Si falla solo la muestra del segundo 38, el tramo lleno que queda es 40–88 = 48 s.
 - Si falla solo la muestra del segundo 88, el tramo lleno que queda es 38–86 = 48 s.
-- Si la muestra corta estuviera en el interior, el tramo más largo sería menor de 48 s. Una prueba local reproduce las dos formas y no relaja el criterio de 50 s.
+- Si la muestra corta estuviera en el interior, el tramo más largo sería menor de 48 s. Una prueba local reproduce las dos formas.
 
 1.484 es 16 clientes, el 1,07 % de 1.500. El proceso de cada generador se da por bueno si existe al menos una muestra con todos sus clientes (`bool(full_media)`). El fallo publicado es el del agregador, que exige las 26 muestras alineadas. Un proceso puede informar `deliveryCheckPassed` y la tanda igual falla por esa muestra extrema.
 
@@ -47,7 +47,7 @@ Un generador a 1.500 oyentes del perfil ensayado tiene que absorber del orden de
 
 ### Artefacto del laboratorio: la continuidad de 1.500
 
-La falla de 1.500 es un artefacto de medición en un solo generador. La entrega HTTP de esa ejecución estuvo limpia. Tratarla como prueba de que el borde no aguanta 1.500 oyentes llevaría a cambiar el Worker sin una falla que corregir. Este cambio no relaja los 50 s: la etiqueta nueva `steadyShortfallClass=endpoint-sample` solo nombra el caso. `httpDeliveryChecksPassed` sigue en falso.
+La falla de 1.500 es un artefacto de medición en un solo generador. La entrega HTTP de esa ejecución estuvo limpia. El agregador ahora exige el aforo completo solo entre el segundo 40 y el penúltimo de la ventana. Una muestra corta en el segundo 38 o en el último queda como `endpoint-sample` y no suspende la tanda. Un hueco interior sigue suspendiéndola. La tanda histórica del 20 de octubre no se reescribe: en su momento el criterio incluía los extremos y el resultado archivado sigue siendo fallido. El Worker no cambia por este caso.
 
 ### Cuellos de plataforma, vistos en las tandas de 10.000 y en el código
 
@@ -69,12 +69,12 @@ Esas tandas mezclan saturación del generador con errores HTTP. No hay una causa
 
 ## 3. Cambios de este cambio
 
-Se implementó lo que un test local puede comprobar. No se tocó el criterio de 50 s ni el Worker.
+Se implementó lo que un test local puede comprobar. El Worker no se modificó.
 
 - `platform/scripts/load_target_policy.py` rechaza los hosts de reproducción de producción (`live.qsession.org`, `qsession.org` y cualquier subdominio, `www`, `media`, y `qsession-live.patriciomoyano11.workers.dev`), las tres IPv4 permanentes (104.238.137.144, 45.77.192.82, 45.77.118.43) y el bucket y el endpoint R2 de producción. Un hostname de carga tiene que llevar una etiqueta DNS `staging` (o `staging-` / `-staging`). No hay variable de entorno que lo desactive. La comprobación del hostname vive dentro de `hls-load-client.py`, que es el único archivo que se sube al generador; el orquestador copia esa misma función al controlador remoto.
 - El cliente de carga, el orquestador (también el script que corre dentro del generador), el publicador sintético, el minteo de concesiones, el observador Redis y la limpieza exigen ese destino. `run-custom-domain-load.py` corta antes de cualquier SSH si faltan `--delivery-host`, `--encoder-host` y `--api-host` de staging.
 - El piloto de un cliente conserva `--known-canary` / `allow_known_canary=True` para los dos hostnames históricos de PRB10A. Los comandos de carga no lo activan.
-- El agregador añade `steadyShortfallClass`: `none`, `endpoint-sample`, `interior-or-sustained` o `no-steady-samples`. Una muestra extrema sigue suspendiendo la tanda.
+- El agregador añade `steadyShortfallClass`: `none`, `endpoint-sample`, `interior-or-sustained`, `incomplete-window` o `no-steady-samples`. El aprobado exige todas las muestras interiores (del segundo 40 al penúltimo). Una o las dos muestras extremas pueden ir cortas. Si falta un slot, aunque sea un extremo, la tanda falla.
 
 Pruebas locales: `python3 -m unittest discover -s test -p 'test_hls_*.py'` y `test_load_target_policy.py` desde `platform/`. No sustituyen una carga.
 
@@ -149,13 +149,13 @@ Las direcciones del ejemplo son de documentación privada. Hay que sustituirlas 
 
 ## 5. Escalera 1.500 → 10.000 → 100.000 → 1.000.000
 
-Cada peldaño se corre en staging, con presupuesto y retirada propios. Un fallo para el avance. No se relaja el criterio para “aprobar”. Si la única muestra corta es un extremo y el resto de contadores HTTP está a cero, se archiva como `endpoint-sample` y se repite con generadores que tengan NIC medida, sin cambiar el Worker para esa causa.
+Cada peldaño se corre en staging, con presupuesto y retirada propios. Un fallo interior para el avance. Una muestra extrema corta, con el HTTP en cero, no basta para declarar que el borde no aguanta. Sigue haciendo falta NIC medida. El Worker no se cambia por un `endpoint-sample`.
 
 ### 1.500, repetir en staging para cerrar el artefacto
 
 - Dos generadores como mínimo, cada uno por debajo de la mitad de su NIC medida. 1.500 × 1,7 Mb/s son 2,55 Gb/s: una sola VM barata está en el límite o por encima.
 - Publicar en el informe `steadyShortfallClass`, CPU steal, `rxMbps` y la velocidad de enlace. Si la NIC no se observa, la tanda es inconclusa aunque el HTTP salga limpio.
-- Mantener hold de 60 s y los 50 s exigidos. El objetivo de esta repetición es separar el extremo de la rampa de un hueco interior. Un hueco interior (`interior-or-sustained`) sí detiene el avance.
+- Hold de 60 s. El interior, del segundo 40 al 86, tiene que mostrar 1.500 receptores recientes en cada muestra. Un `endpoint-sample` con contadores HTTP a cero cierra el artefacto. Un hueco interior (`interior-or-sustained`) detiene el avance.
 
 ### 10.000, primer objetivo del producto
 

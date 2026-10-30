@@ -95,7 +95,7 @@ class GeneratorPartitions(unittest.TestCase):
             workers = trial[0]['nodeReport']['workers']
             if mutate == 'missing': workers.pop()
             if mutate == 'duplicate': workers.append(copy.deepcopy(workers[0]))
-            if mutate == 'one_listener': workers[0]['report']['samples'][-1]['recentMediaClients'] -= 1
+            if mutate == 'one_listener': workers[0]['report']['samples'][len(workers[0]['report']['samples'])//2]['recentMediaClients'] -= 1
             if mutate == 'one_reconnection': workers[0]['report']['counts']['reconnectMediaResumedClients'] -= 1
             if mutate == 'slow_reconnection': workers[0]['report']['reconnection']['maximumRecoveryMilliseconds'] = 12001
             if mutate == 'cpu':

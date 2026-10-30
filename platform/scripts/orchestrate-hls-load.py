@@ -266,22 +266,37 @@ def validate_inventory(inventory, now=None):
             'generators':[{key:node[key] for key in keys if key in node} for node in nodes]}
 
 
-def classify_steady_shortfall(steady, expected_clients):
-    """Label a failed continuity window without changing the pass rule.
+def classify_steady_shortfall(steady, expected_clients, window_start, window_end, expected_count):
+    """Label continuity against the scheduled window, not whichever samples arrived.
 
-    A single short sample on the first or last steady slot is the signature
-    of the 1,500-client result: the aligned span drops by one 2-second step.
-    An interior dip is a different failure and stays labeled as such.
+    The first and last scheduled slots are ramp and deadline edges. A short
+    count there is endpoint-sample. A short count anywhere between them, or a
+    missing slot, is a real continuity failure.
     """
     if not steady:
         return 'no-steady-samples'
+    if len(steady) != expected_count:
+        return 'incomplete-window'
     short = [item for item in steady if item.get('concurrentRecentMediaClients') != expected_clients]
     if not short:
         return 'none'
-    endpoints = {steady[0]['elapsedSeconds'], steady[-1]['elapsedSeconds']}
-    if len(short) <= 2 and all(item['elapsedSeconds'] in endpoints for item in short):
+    endpoints = {window_start, window_end}
+    if all(item['elapsedSeconds'] in endpoints for item in short):
         return 'endpoint-sample'
     return 'interior-or-sustained'
+
+
+def interior_delivery_complete(steady, expected_clients, window_start, window_end, expected_count):
+    """Every scheduled interior sample must show the full client count.
+
+    The slots at window_start and window_end may be short. A missing slot
+    anywhere in the window still fails: the edge pardon is not a hole.
+    """
+    if len(steady) != expected_count:
+        return False
+    endpoints = {window_start, window_end}
+    return all(item['concurrentRecentMediaClients'] == expected_clients or item['elapsedSeconds'] in endpoints
+               for item in steady)
 
 
 def longest_consecutive_run(indices):
@@ -440,11 +455,15 @@ def aggregate(inventory, results):
     full = [item['elapsedSeconds']//2 for item in aligned if item['complete']
             and item['concurrentRecentMediaClients'] == expected_clients]
     longest = longest_consecutive_run(full)
-    steady = [item for item in aligned if item['complete'] and 38 <= item['elapsedSeconds'] <= steady_end]
+    window_start = 38
+    steady = [item for item in aligned if item['complete'] and window_start <= item['elapsedSeconds'] <= steady_end]
+    interior_start, interior_end = window_start + 2, steady_end - 2
+    shortfall = classify_steady_shortfall(steady, expected_clients, window_start, steady_end, expected_steady)
     if not longest:
         failures.append('no_common_full_media_sample')
-    if len(steady) != expected_steady or any(item['concurrentRecentMediaClients'] != expected_clients for item in steady):
-        failures.append('incomplete_common_media_delivery_between_seconds_38_and_'+str(steady_end))
+    if not interior_delivery_complete(steady, expected_clients, window_start, steady_end, expected_steady):
+        failures.append('incomplete_common_media_delivery_between_seconds_'
+                        + str(interior_start) + '_and_' + str(interior_end))
     return {'schemaVersion':1,'runId':inventory['runId'],'startAtUnix':start_at,
             'requestedGenerators':len(inventory['generators']),'requestedClients':expected_clients,
             'expectedWorkers':expected_workers,'nodes':nodes,'counts':dict(total_counts),
@@ -452,16 +471,20 @@ def aggregate(inventory, results):
             'peakConcurrentRecentMediaClients':max((item['concurrentRecentMediaClients'] for item in aligned if item['complete']),default=0),
             'steadyConcurrentRecentMediaMinimum':min((item['concurrentRecentMediaClients'] for item in steady),default=0),
             'completeSteadySamples':len(steady),'expectedSteadySamples':expected_steady,
-            'holdSeconds':hold,'steadyWindowStartSeconds':38,'steadyWindowEndSeconds':steady_end,
-            'steadyShortfallClass':classify_steady_shortfall(steady, expected_clients),
-            'requiredSteadySpanSeconds':steady_end-38,'reconnectAfterSeconds':reconnect,
+            'holdSeconds':hold,'steadyWindowStartSeconds':window_start,'steadyWindowEndSeconds':steady_end,
+            'interiorWindowStartSeconds':interior_start,'interiorWindowEndSeconds':interior_end,
+            'endpointSamplesExcludedFromPass':True,
+            'steadyShortfallClass':shortfall,
+            'requiredSteadySpanSeconds':steady_end-window_start,
+            'requiredInteriorSpanSeconds':interior_end-interior_start,
+            'reconnectAfterSeconds':reconnect,
             'longestCommonFullMediaSpanSeconds':2*(longest[-1]-longest[0]) if longest else 0,
             'longestCommonFullMediaFirstAtSeconds':longest[0]*2 if longest else None,
             'longestCommonFullMediaLastAtSeconds':longest[-1]*2 if longest else None,
             'failureReasons':failures,'httpDeliveryChecksPassed':not failures,
             'decodedPlaybackTested':False,'backendActiveLeasesVerifiedByThisTool':False,
             'certifiesProductionCapacity':False,
-            'interpretation':'Aligned recent segment receipts, not decoded playback. CPU or NIC saturation makes generator capacity inconclusive. Backend lease counts require a separate observation.'}
+            'interpretation':'Aligned recent segment receipts, not decoded playback. A short first or last steady sample does not fail the run. An interior gap does. CPU or NIC saturation makes generator capacity inconclusive. Backend lease counts require a separate observation.'}
 
 
 def run_node(node, inventory, provenance=None):
