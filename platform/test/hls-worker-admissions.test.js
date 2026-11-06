@@ -529,7 +529,8 @@ test('admission coalescing regression: a full pending map fails closed before ca
   let lookups = 0;
   const h = harness();
   h.cache.match = async () => { lookups++; };
-  vm.runInContext('for (let i = 0; i < 4096; i++) pendingApprovals.set("occupied-" + i, {settled: false, until: Infinity})', h.scope);
+  assert.equal(vm.runInContext('AUTH_PENDING_LIMIT', h.scope), 8192);
+  vm.runInContext('for (let i = 0; i < AUTH_PENDING_LIMIT; i++) pendingApprovals.set("occupied-" + i, {settled: false, until: Infinity})', h.scope);
   const response = await h.request('segment_01.ts', h.token(), {method: 'HEAD'});
   assert.equal(response.status, 503);
   assert.equal(response.headers.get('X-QSession-Admission-Failure'), 'edge-pending-limit');
@@ -540,7 +541,7 @@ test('admission coalescing regression: a full pending map fails closed before ca
   assert.equal(h.calls.api.length, 0);
   assert.equal(h.calls.gets.length + h.calls.heads.length, 0);
   assert.equal((await h.request('segment_01.ts', 'v1.invalid.invalid')).status, 403);
-  assert.equal(vm.runInContext('pendingApprovals.size', h.scope), 4096);
+  assert.equal(vm.runInContext('pendingApprovals.size', h.scope), 8192);
 });
 
 test('admission coalescing regression: failures back off briefly without becoming approvals or caching denials', async () => {
@@ -791,7 +792,8 @@ test('fixed admission table: full fingerprints, bounded collisions and unchanged
       unknown: memoryApproval(new Uint32Array([12345, 99999, 0, 0, 0, 0, 0, 0])),
       evictions: admissionStats.evicted};
   })()`, h.scope);
-  assert.equal(result.bytes, 1310720);
+  assert.equal(vm.runInContext('AUTH_APPROVAL_SLOTS', h.scope), 65536);
+  assert.equal(result.bytes, 2621440);
   assert.equal(result.hits, 64);
   assert.equal(result.unknown, 0, 'bucket collisions never approve another full fingerprint');
   assert.equal(result.evictions, 6);
