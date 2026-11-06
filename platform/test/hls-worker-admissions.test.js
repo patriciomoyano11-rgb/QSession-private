@@ -68,7 +68,6 @@ function harness(options = {}) {
   const env = {
     QSESSION_ADMISSION_ROOM: 'JNTUBY', QSESSION_ADMISSION_SECRET: SECRET,
     QSESSION_ADMISSION_API: 'https://qsession.org/api/broadcast/admissions/check',
-    QSESSION_ADMISSION_BACKEND: options.backend || 'required',
     QSESSION_LIVE: {
       async get(key, getOptions) {
         calls.gets.push({key, options: getOptions});
@@ -782,25 +781,45 @@ test('a token expiring during a fresh manifest read cannot receive the recovered
 });
 
 
-test('a valid token plays while Redis is down and an expired token never reaches storage', async () => {
-  const h = harness({backend: 'token', api: async () => { throw new Error('redis down'); }});
-  const token = h.token();
-  const played = await h.request('segment_01.ts', token);
-  assert.equal(played.status, 200);
-  assert.equal(await played.text(), '0123456789');
-  assert.equal(played.headers.get('X-QSession-Admission-Phase'), 'token');
-  assert.equal(h.calls.api.length, 0);
-  assert.equal(h.calls.gets.length, 1);
+test('a variable cannot skip the Redis lease check', async () => {
+  for (const backend of ['', 'token', 'stateless', 'require', 'REQUIRED', 'required']) {
+    const h = harness({api: async () => { throw new Error('redis down'); }});
+    h.env.QSESSION_ADMISSION_BACKEND = backend;
+    const response = await h.request('segment_01.ts', h.token());
+    assert.equal(response.status, 503, backend);
+    assert.equal(h.calls.gets.length, 0, backend);
+    assert.ok(h.calls.api.length >= 1, backend);
+  }
+  const h = harness();
   const expired = h.token({exp: Math.floor(h.clock.now / 1000)});
   assert.equal((await h.request('segment_01.ts', expired)).status, 403);
-  const forged = `${token}x`;
-  assert.equal((await h.request('segment_01.ts', forged)).status, 403);
-  assert.equal(h.calls.gets.length, 1);
+  assert.equal(h.calls.gets.length, 0);
   assert.equal(h.calls.api.length, 0);
 });
 
-test('a rejected cache write still delivers the verified segment from one read', async () => {
-  const h = harness({backend: 'token', cache: {
+test('staging profile fails closed before storage when admission is missing or points at production', async () => {
+  const blocked = harness();
+  blocked.env.QSESSION_EDGE_PROFILE = 'staging';
+  assert.equal((await blocked.request('segment_01.ts', blocked.token())).status, 503);
+  assert.equal(blocked.calls.gets.length, 0);
+  assert.equal(blocked.calls.api.length, 0);
+  const open = harness();
+  delete open.env.QSESSION_ADMISSION_SECRET;
+  open.env.QSESSION_EDGE_PROFILE = 'staging';
+  open.env.QSESSION_ADMISSION_API = 'https://api.staging.example.test/check';
+  assert.equal((await open.request('segment_01.ts', open.token())).status, 503);
+  assert.equal(open.calls.gets.length, 0);
+  const ready = harness();
+  ready.env.QSESSION_EDGE_PROFILE = 'staging';
+  ready.env.QSESSION_ADMISSION_API = 'https://api.staging.example.test/check';
+  const response = await ready.request('segment_01.ts', ready.token());
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), '0123456789');
+  assert.ok(ready.calls.api.length >= 1);
+});
+
+test('a rejected cache write still delivers one complete read and releases its budget', async () => {
+  const h = harness({cache: {
     async match() { return undefined; },
     async put(_request, response) { await response.arrayBuffer(); throw new Error('cache rejected'); },
   }});
@@ -809,7 +828,38 @@ test('a rejected cache write still delivers the verified segment from one read',
   assert.equal(await response.text(), '0123456789');
   assert.equal(response.headers.get('X-QSession-Cache-Fill-State'), 'verified');
   assert.equal(h.calls.gets.length, 1);
-  assert.equal(h.calls.api.length, 0);
+  assert.equal(vm.runInContext('verifiedFillBytes', h.scope), 0);
+  assert.equal(vm.runInContext('verifiedFillCount', h.scope), 0);
+});
+
+test('cancelling a verified body releases the shared buffer budget', async () => {
+  const h = harness({cache: {
+    async match() { return undefined; },
+    async put() { throw new Error('cache rejected'); },
+  }});
+  const response = await h.request('segment_01.ts', h.token());
+  assert.equal(response.status, 200);
+  assert.equal(vm.runInContext('verifiedFillCount', h.scope), 1);
+  await response.body.cancel();
+  assert.equal(vm.runInContext('verifiedFillBytes', h.scope), 0);
+  assert.equal(vm.runInContext('verifiedFillCount', h.scope), 0);
+});
+
+test('incomplete bodies are not served and a full verified-fill budget fails before buffering', async () => {
+  const short = harness();
+  short.env.QSESSION_LIVE.get = async () => ({size: 10, httpEtag: '"x"', body: new Uint8Array(4), writeHttpMetadata() {}});
+  assert.equal((await short.request('segment_01.ts', short.token())).status, 503);
+  assert.equal(short.calls.api.length >= 1, true);
+  assert.equal(vm.runInContext('verifiedFillBytes', short.scope), 0);
+  assert.equal(vm.runInContext('verifiedFillCount', short.scope), 0);
+  const full = harness();
+  vm.runInContext('verifiedFillCount = 4', full.scope);
+  full.env.QSESSION_LIVE.get = async () => ({size: 32, httpEtag: '"x"', body: new Uint8Array(32), writeHttpMetadata() {}});
+  const response = await full.request('segment_01.ts', full.token());
+  assert.equal(response.status, 503);
+  assert.equal(response.headers.get('X-QSession-Media-Failure'), 'edge-body-budget');
+  assert.equal(vm.runInContext('verifiedFillCount', full.scope), 4);
+  assert.equal(vm.runInContext('verifiedFillBytes', full.scope), 0);
 });
 
 test('fixed admission table: full fingerprints, bounded collisions and unchanged absolute expiry', () => {

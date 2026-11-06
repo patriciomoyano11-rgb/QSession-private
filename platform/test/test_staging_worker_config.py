@@ -23,6 +23,7 @@ class StagingWorkerConfig(unittest.TestCase):
             'name = "qsession-live-staging"\n'
             'bucket_name = "qsession-live-staging"\n'
             'preview_bucket_name = "qsession-live-staging-preview"\n'
+            'QSESSION_EDGE_PROFILE = "staging"\n'
             '# live.qsession.org must not be attached\n'), [])
 
 

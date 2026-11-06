@@ -88,6 +88,11 @@ class DeliveryAggregation(unittest.TestCase):
             inventory['deliveryHost']=host
             with self.subTest(host=host), self.assertRaises(ValueError):
                 module.validate_inventory(inventory,now=990)
+        inventory['deliveryHost']='live.staging.qsession.test'
+        for address in ('45.76.25.22', '045.077.192.082', '::ffff:45.77.192.82', '10.8.0.5'):
+            inventory['generators'][0]['ip']=address
+            with self.subTest(address=address), self.assertRaises(ValueError):
+                module.validate_inventory(inventory,now=990)
 
     def test_endpoint_sample_shortfall_passes_and_an_interior_gap_fails(self):
         inventory={'runId':'bounded-test-1500','startAtUnix':1000,'holdSeconds':60,'generators':[]}
@@ -113,6 +118,15 @@ class DeliveryAggregation(unittest.TestCase):
         self.assertEqual(report['interiorWindowEndSeconds'],86)
         self.assertEqual(report['steadyShortfallClass'],'endpoint-sample')
         self.assertTrue(report['httpDeliveryChecksPassed'])
+        workers[0]['report']['samples'][0]['recentMediaClients']=200
+        loss=module.aggregate(inventory,results)
+        self.assertEqual(loss['steadyShortfallClass'],'endpoint-loss')
+        self.assertFalse(loss['httpDeliveryChecksPassed'])
+        workers[0]['report']['samples'][0]['recentMediaClients']=0
+        empty=module.aggregate(inventory,results)
+        self.assertEqual(empty['steadyShortfallClass'],'endpoint-loss')
+        self.assertFalse(empty['httpDeliveryChecksPassed'])
+        workers[0]['report']['samples'][0]['recentMediaClients']=359
         self.assertNotIn('incomplete_common_media_delivery_between_seconds_40_and_86', report['failureReasons'])
         workers[0]['report']['samples'][-1]['recentMediaClients']=359
         both_edges=module.aggregate(inventory,results)

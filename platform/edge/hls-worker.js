@@ -36,6 +36,10 @@ const pendingCanaryBodies = new Map();
 const r2EdgeBodies = new Map();
 const pendingCanaryCacheWrites = new Map();
 const R2_EDGE_BODY_BYTES_LIMIT = 32 * 1024 * 1024;
+const VERIFIED_FILL_BYTES_LIMIT = 32 * 1024 * 1024;
+const VERIFIED_FILL_COUNT_LIMIT = 4;
+let verifiedFillBytes = 0;
+let verifiedFillCount = 0;
 const R2_EDGE_BODY_KEY_LIMIT = 64;
 const R2_EDGE_BODY_TTL_MS = 12000;
 const R2_EDGE_PLAYLIST_TTL_MS = 750;
@@ -180,39 +184,23 @@ function admissionErrorHeaders(phase, attempts) {
     'X-QSession-Admission-Stats': Object.entries(admissionStats).map(([name, value]) => `${name}=${value}`).join(';')};
 }
 
-function admissionBackendRequired(env) {
-  // Playback trusts the signed token unless an operator explicitly asks every
-  // segment to renew the Redis lease. Revocation then waits for token expiry.
-  return String(env.QSESSION_ADMISSION_BACKEND || '').trim() === 'required';
-}
-
 async function checkAdmission(request, env, context, room, objectKey) {
+  // Every playback request renews the Redis lease. A missing or mistyped
+  // variable must not skip that check: issued tokens can outlive the seat.
   const secret = String(env.QSESSION_ADMISSION_SECRET || '');
-  const stateless = !admissionBackendRequired(env);
-  if (encoder.encode(secret).byteLength < 32) {
-    return {error: textResponse(request, 503, 'La admisión de espectadores no está disponible')};
-  }
   let api;
-  if (!stateless) {
-    try {
-      api = new URL(env.QSESSION_ADMISSION_API);
-      if (api.protocol !== 'https:' || api.username || api.password) throw new Error('Invalid configuration');
-    } catch {
-      return {error: textResponse(request, 503, 'La admisión de espectadores no está disponible')};
-    }
+  try {
+    api = new URL(env.QSESSION_ADMISSION_API);
+    if (api.protocol !== 'https:' || api.username || api.password || encoder.encode(secret).byteLength < 32) throw new Error('Invalid configuration');
+  } catch {
+    return {error: textResponse(request, 503, 'La admisión de espectadores no está disponible')};
   }
   const url = new URL(request.url);
   const tokens = url.searchParams.getAll('qsat');
   const token = tokens.length === 1 ? tokens[0] : '';
   // Every request verifies its own signature, scope and expiry before joining.
   const payload = await verifyToken(token, secret, room, objectKey);
-  if (!payload || payload.exp <= Math.floor(Date.now() / 1000)) {
-    return {error: textResponse(request, 403, 'Acceso de reproducción no válido o vencido')};
-  }
-  if (stateless) {
-    countAdmission('token');
-    return {token, payload, admissionMode: 'token'};
-  }
+  if (!payload) return {error: textResponse(request, 403, 'Acceso de reproducción no válido o vencido')};
   const digest = await crypto.subtle.digest('SHA-256', encoder.encode(
     `${api.href}\n${payload.code}\n${payload.prefix}\n${payload.generation ?? ''}\n${payload.lease}\n${secret}`));
   const fingerprint = new Uint32Array(digest);
@@ -531,9 +519,32 @@ function verifiedMediaHeaders(object, isPlaylist, size) {
   return headers;
 }
 
-async function readVerifiedBytes(object, isPlaylist, signal) {
+function canBufferVerifiedObject(object, isPlaylist) {
   const maximum = isPlaylist ? 65536 : SHARED_OBJECT_LIMIT;
-  if (!Number.isSafeInteger(object.size) || object.size <= 0 || object.size > maximum || !object.body) return null;
+  return Number.isSafeInteger(object?.size) && object.size > 0 && object.size <= maximum && !!object.body;
+}
+
+function reserveVerifiedFill(size) {
+  if (verifiedFillCount >= VERIFIED_FILL_COUNT_LIMIT || verifiedFillBytes + size > VERIFIED_FILL_BYTES_LIMIT) {
+    throw mediaError('edge-body-budget');
+  }
+  verifiedFillBytes += size;
+  verifiedFillCount += 1;
+  return {size, refs: 1, bytes: null, released: false, fillHandoff: false};
+}
+
+function releaseVerifiedFill(hold) {
+  if (!hold || hold.released) return;
+  hold.refs -= 1;
+  if (hold.refs > 0) return;
+  hold.released = true;
+  hold.bytes = null;
+  verifiedFillBytes -= hold.size;
+  verifiedFillCount -= 1;
+}
+
+async function readVerifiedBytes(object, isPlaylist, signal) {
+  if (!canBufferVerifiedObject(object, isPlaylist)) return null;
   if (signal.aborted) throw mediaError('edge-fill-timeout');
   let bytes;
   try { bytes = new Uint8Array(await new Response(object.body).arrayBuffer()); }
@@ -544,7 +555,9 @@ async function readVerifiedBytes(object, isPlaylist, signal) {
 }
 
 function responseFromBytes(request, fill, isPlaylist) {
-  const size = fill.bytes.byteLength;
+  const hold = fill.hold;
+  if (!hold || hold.released || !hold.bytes) throw mediaError('edge-body-budget');
+  const size = hold.bytes.byteLength;
   let range = null;
   if (!isPlaylist && request.method === 'GET' && request.headers.has('Range')) {
     range = parseRange(request.headers.get('Range'), size);
@@ -555,16 +568,33 @@ function responseFromBytes(request, fill, isPlaylist) {
   const headers = new Headers(fill.headers);
   headers.set('Content-Length', String(length));
   if (range) headers.set('Content-Range', `bytes ${start}-${start + length - 1}/${size}`);
-  let body = null;
-  if (request.method !== 'HEAD') {
-    let offset = start;
-    body = new ReadableStream({pull(controller) {
-      if (offset >= start + length) { controller.close(); return; }
-      const end = Math.min(start + length, offset + 8192);
-      controller.enqueue(fill.bytes.subarray(offset, end));
-      offset = end;
-    }}, {highWaterMark: 0});
+  hold.refs += 1;
+  if (!hold.fillHandoff) {
+    hold.fillHandoff = true;
+    releaseVerifiedFill(hold);
   }
+  const release = () => releaseVerifiedFill(hold);
+  if (request.method === 'HEAD') {
+    release();
+    return new Response(null, {status: range ? 206 : 200, headers});
+  }
+  let offset = start, released = false;
+  const finish = () => { if (!released) { released = true; release(); } };
+  const body = new ReadableStream({
+    pull(controller) {
+      try {
+        if (!hold.bytes) throw mediaError('edge-body-budget');
+        if (offset >= start + length) { controller.close(); finish(); return; }
+        const end = Math.min(start + length, offset + 8192);
+        controller.enqueue(hold.bytes.subarray(offset, end));
+        offset = end;
+      } catch (error) {
+        finish();
+        controller.error(error);
+      }
+    },
+    cancel() { finish(); },
+  }, {highWaterMark: 0});
   return new Response(body, {status: range ? 206 : 200, headers});
 }
 
@@ -580,23 +610,34 @@ async function fillObjectCache(cache, cacheKey, env, key, isPlaylist, context, r
       object = await readObject(signal);
       if (signal.aborted) throw mediaError('edge-fill-timeout');
       if (!object) return fillResult('missing');
-      const bytes = await readVerifiedBytes(object, isPlaylist, signal);
-      if (bytes) {
-        const headers = verifiedMediaHeaders(object, isPlaylist, bytes.byteLength);
-        let stored = false;
+      if (canBufferVerifiedObject(object, isPlaylist)) {
+        let hold = null;
         try {
           if (signal.aborted) throw mediaError('edge-fill-timeout');
-          await cache.put(cacheKey, new Response(new Uint8Array(bytes), {status: 200, headers}));
-          const retained = await cache.match(cacheKey);
-          stored = Boolean(retained && retained.status === 200 && Number(retained.headers.get('Content-Length')) === bytes.byteLength);
-          cancelBody(retained?.body);
+          try { hold = reserveVerifiedFill(object.size); }
+          catch (error) { await cancelBody(object.body); throw error; }
+          const bytes = await readVerifiedBytes(object, isPlaylist, signal);
+          if (!bytes || bytes.byteLength !== object.size) throw mediaError('storage-incomplete');
+          hold.bytes = bytes;
+          const headers = verifiedMediaHeaders(object, isPlaylist, bytes.byteLength);
+          let stored = false;
+          try {
+            if (signal.aborted) throw mediaError('edge-fill-timeout');
+            await cache.put(cacheKey, new Response(new Uint8Array(bytes), {status: 200, headers}));
+            const retained = await cache.match(cacheKey);
+            stored = Boolean(retained && retained.status === 200 && Number(retained.headers.get('Content-Length')) === bytes.byteLength);
+            cancelBody(retained?.body);
+          } catch (error) {
+            if (signal.aborted || error?.qsessionMediaFailure === 'edge-fill-timeout') throw error;
+            stored = false;
+          }
+          // One shared copy. Cache retention is optional after a complete read.
+          // The byte budget stays charged until every response stream finishes.
+          return fillResult(stored ? 'stored' : 'verified', {bytes, headers, hold});
         } catch (error) {
-          if (signal.aborted || error?.qsessionMediaFailure === 'edge-fill-timeout') throw error;
-          stored = false;
+          releaseVerifiedFill(hold);
+          throw error;
         }
-        // Cache retention is optional once the bytes are verified. Waiters share
-        // this one copy; a discarded write must not become a 503.
-        return fillResult(stored ? 'stored' : 'verified', {bytes, headers});
       }
       // Only canonical bytes enter the cache. Personalized manifests never do.
       response = storageResponse(object, isPlaylist, null, context);
@@ -1014,7 +1055,6 @@ async function serveResponse(request, response, admission, isPlaylist, hit, fill
   if (operationState) headers.set('X-QSession-Cache-Fill-State', operationState);
   let body = response.body;
   if (admission) {
-    if (admission.admissionMode === 'token') headers.set('X-QSession-Admission-Phase', 'token');
     if (['timeout', 'network', 'gateway'].includes(admission.admissionRecovery)) {
       headers.set('X-QSession-Admission-Recovery', admission.admissionRecovery);
     }
@@ -1055,10 +1095,42 @@ async function serveResponse(request, response, admission, isPlaylist, hit, fill
   return new Response(request.method === 'HEAD' ? null : body, {status: response.status, headers});
 }
 
+const PRODUCTION_PLAYBACK_HOSTS = new Set([
+  'live.qsession.org', 'www.qsession.org', 'qsession.org', 'media.qsession.org',
+  'qsession-live.patriciomoyano11.workers.dev',
+]);
+
+function productionPlaybackHost(host) {
+  const normalized = String(host || '').toLowerCase().replace(/\.$/, '');
+  return PRODUCTION_PLAYBACK_HOSTS.has(normalized) || normalized === 'qsession.org' || normalized.endsWith('.qsession.org');
+}
+
+function stagingConfigurationError(request, env) {
+  // Only the staging profile fails closed. Production keeps its existing
+  // dashboard variables and still checks the Redis lease on every request.
+  if (String(env.QSESSION_EDGE_PROFILE || '').trim() !== 'staging') return null;
+  const secret = String(env.QSESSION_ADMISSION_SECRET || '');
+  const room = String(env.QSESSION_ADMISSION_ROOM || '').trim().toUpperCase();
+  let api;
+  try { api = new URL(String(env.QSESSION_ADMISSION_API || '')); }
+  catch { api = null; }
+  const apiHost = api?.hostname || '';
+  let requestHost = '';
+  try { requestHost = new URL(request.url).hostname; } catch { requestHost = ''; }
+  if (encoder.encode(secret).byteLength < 32 || !/^[A-Z0-9]{6}$/.test(room) || !api ||
+      api.protocol !== 'https:' || api.username || api.password || productionPlaybackHost(apiHost) ||
+      productionPlaybackHost(requestHost) || !env.QSESSION_LIVE) {
+    return textResponse(request, 503, 'Staging sin configuración de admisión');
+  }
+  return null;
+}
+
 export default {
   async fetch(request, env, context) {
     if (request.method === 'OPTIONS') return new Response(null, {status: 204, headers: corsHeaders()});
     if (request.method !== 'GET' && request.method !== 'HEAD') return textResponse(request, 405, 'Método no permitido');
+    const stagingError = stagingConfigurationError(request, env);
+    if (stagingError) return stagingError;
 
     const url = new URL(request.url);
     let key;

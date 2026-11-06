@@ -220,7 +220,7 @@ class RunnerCleanupTests(unittest.TestCase):
             (scripts/'hls_candidate_readiness.py').write_text('def require_published_candidate(root):\n return '+repr({
                 'sourceSha256':digest,'readyForPaidLoadPreparation':True})+'\n')
             nodes=[{'label':f'qsession-load-offline-{index}','ownedForThisTest':True,'destroyed':False,
-                'sshReady':True,'logicalCpuCount':8} for index in range(7)]
+                'sshReady':True,'logicalCpuCount':8,'ip':f'10.8.1.{index+1}'} for index in range(7)]
             inventory={'generators':nodes,'candidateSourceSha256':digest,'scope':{'maximumInstances':7},
                 'newBudget':{'additionalComputeLimitUsd':2.10,'previousObservedComputeUsd':0},
                 'fullMediaRepeatStage':{'maximumExecutions':1,'clients':10000,'holdSeconds':620,
@@ -229,7 +229,8 @@ class RunnerCleanupTests(unittest.TestCase):
             inventory_path=release/'inventory.json';inventory_path.write_text(json.dumps(inventory))
             args=types.SimpleNamespace(inventory=inventory_path,suffix='media-full-cleanup-offline',
                 clients=10000,hold=620,reconnect_after=240,workers_per_node=8,transport='aiohttp',
-                delivery_host='live.staging.qsession.test',encoder_host='10.8.0.5',api_host='10.8.0.6')
+                delivery_host='live.staging.qsession.test',encoder_host='10.8.0.5',api_host='10.8.0.6',
+                staging_ssh_allowlist='10.8.0.5,10.8.0.6,'+','.join(f'10.8.1.{index+1}' for index in range(7)))
             publisher=FakeOrigin();watcher=FakeObserver(stubborn);calls=[]
             def popen(command, **kwargs):
                 self.assertIs(kwargs['stdin'],subprocess.PIPE)

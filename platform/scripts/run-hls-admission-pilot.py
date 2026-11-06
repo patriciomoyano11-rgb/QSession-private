@@ -57,7 +57,7 @@ def main(args):
     spec = importlib.util.spec_from_file_location('hls_client', RUNNER)
     runner = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(runner)
-    runner.configure_delivery_host(args.delivery_host, allow_known_canary=True)
+    runner.configure_delivery_host(args.delivery_host)
     tokens = runner.read_tokens(TOKENS, 1)
     token = tokens[0]
     url = runner.URL + '?' + urllib.parse.urlencode({'qsat': token})
@@ -73,7 +73,7 @@ def main(args):
             log = pathlib.Path(directory) / 'origin.jsonl'
             with open(log, 'xb') as output:
                 process = subprocess.Popen([str(PYTHON), str(ORIGIN), '--duration', '90',
-                                            '--delivery-host', args.delivery_host, '--known-canary'],
+                                            '--delivery-host', args.delivery_host],
                                            stdout=output, stderr=subprocess.DEVNULL, start_new_session=True)
                 ready = None
                 deadline = time.monotonic()+20
@@ -171,8 +171,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--delivery-host', choices=('qsession-live.patriciomoyano11.workers.dev','live.qsession.org'),
-                        default='qsession-live.patriciomoyano11.workers.dev')
+    parser.add_argument('--delivery-host', required=True,
+                        help='Staging playback hostname. Production hosts are refused.')
     parser.add_argument('--transport', choices=('stdlib','aiohttp'), default='stdlib')
     args=parser.parse_args()
     try:

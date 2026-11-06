@@ -17,7 +17,9 @@ import threading
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from load_target_policy import require_staging_delivery_host, require_staging_ssh_host
+from load_target_policy import (
+    parse_staging_ssh_allowlist, require_allowlisted_staging_ssh, require_staging_delivery_host,
+    require_staging_ssh_host)
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 SCRIPTS=ROOT/'platform/scripts'
@@ -311,8 +313,9 @@ def reserve_full_media_execution(inventory, clients, hold, reconnect, transport,
 def main(args):
     # Refuse production before any SSH, mint, or origin publication.
     delivery_host = require_staging_delivery_host(getattr(args, 'delivery_host', None))
-    encoder_host = require_staging_ssh_host(getattr(args, 'encoder_host', None))
-    api_host = require_staging_ssh_host(getattr(args, 'api_host', None))
+    allowlist = parse_staging_ssh_allowlist(getattr(args, 'staging_ssh_allowlist', None))
+    encoder_host = require_allowlisted_staging_ssh(getattr(args, 'encoder_host', None), allowlist)
+    api_host = require_allowlisted_staging_ssh(getattr(args, 'api_host', None), allowlist)
     import importlib.util
     candidate_spec=importlib.util.spec_from_file_location('candidate_gate',ROOT/'platform/scripts/hls_candidate_readiness.py')
     candidate_gate=importlib.util.module_from_spec(candidate_spec);candidate_spec.loader.exec_module(candidate_gate)
@@ -339,6 +342,8 @@ def main(args):
         raise ValueError('Expected a bounded verified disposable batch')
     if not len(nodes)*4<=args.clients<=10000 or (args.clients+len(nodes)-1)//len(nodes)>1500:
         raise ValueError('Client count exceeds the per-generator diagnostic bound')
+    for node in nodes:
+        require_allowlisted_staging_ssh(node.get('ip'), allowlist)
     budget = validate_budget(inventory)
     retirement = retirement_preflight(inventory, encoder_host)
     if (reserve_media_diagnostic_execution(inventory,args.clients,hold,reconnect,args.transport,args.suffix,RELEASE)
@@ -368,7 +373,7 @@ def main(args):
         mint_attempted=True
         result=subprocess.run([sys.executable,str(SCRIPTS/'distribute-probe-leases.py'),
             '--inventory',str(inventory_path),'--delivery-host',delivery_host,
-            '--admission-host',api_host,
+            '--admission-host',api_host,'--staging-ssh-allowlist',','.join(allowlist),
             '--clients',str(args.clients),
             '--minimum-remaining-seconds',str(max(300,duration+150)),
             '--output',str(artifact('load-run-custom-domain')),
@@ -393,13 +398,14 @@ def main(args):
         for node in run_inventory['generators']:node['workersPerNode']=workers_per_node
         run_inventory_path.write_text(json.dumps(run_inventory,indent=2)+'\n',encoding='utf-8')
         observer=subprocess.Popen([sys.executable,str(SCRIPTS/'observe-distributed-probe.py'),
-            '--api-host',api_host,
+            '--api-host',api_host,'--staging-ssh-allowlist',','.join(allowlist),
             '--output',str(artifact('load-redis-custom-domain')),'--duration',str(max(125,duration+35))],
             stdin=subprocess.PIPE,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,text=True)
         load_stem='hls-10000-custom-domain' if args.clients==10000 else 'hls-diagnostic-custom-domain'
         load_started=True
         result=subprocess.run([sys.executable,str(SCRIPTS/'orchestrate-hls-load.py'),
             '--inventory',str(artifact('load-run-custom-domain')),
+            '--staging-ssh-allowlist',','.join(allowlist),
             '--output',str(artifact(load_stem))],capture_output=True,text=True,timeout=duration+90)
         report['loadExitCode']=result.returncode
         if result.returncode not in (0,2):raise RuntimeError('Load controller failed')
@@ -415,7 +421,7 @@ def main(args):
         if mint_attempted:
             try:
                 cleanup=subprocess.run([sys.executable,str(SCRIPTS/'cleanup-distributed-probe.py'),
-                    '--api-host',api_host,
+                    '--api-host',api_host,'--staging-ssh-allowlist',','.join(allowlist),
                     '--inventory',str(inventory_path),'--expected-clients',str(args.clients)],capture_output=True,text=True,timeout=65)
                 report['leaseCleanupExitCode']=cleanup.returncode
                 if cleanup.returncode==0:
@@ -459,4 +465,6 @@ if __name__=='__main__':
                         help='Staging encoder IPv4. The permanent production servers are refused.')
     parser.add_argument('--api-host', required=True,
                         help='Staging API IPv4 used to mint and observe leases.')
+    parser.add_argument('--staging-ssh-allowlist', required=True,
+                        help='Comma-separated canonical staging IPv4 addresses. Production addresses are rejected.')
     raise SystemExit(main(parser.parse_args()))

@@ -8,7 +8,7 @@ import re
 import subprocess
 import sys
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from load_target_policy import require_staging_ssh_host
+from load_target_policy import parse_staging_ssh_allowlist, require_allowlisted_staging_ssh
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 SSH=['ssh','-T','-i','C:/Users/maria/.ssh/qsession_deploy_ed25519','-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12']
 code=r'''
@@ -27,19 +27,28 @@ if __name__=='__main__':
     parser.add_argument('--expected-clients',type=int,default=10000)
     parser.add_argument('--api-host', required=True,
                         help='Staging API IPv4. The production app server is refused.')
+    parser.add_argument('--staging-ssh-allowlist', required=True,
+                        help='Comma-separated canonical staging IPv4 addresses.')
     args=parser.parse_args()
     try:
-        api_host = require_staging_ssh_host(args.api_host)
+        allowlist = parse_staging_ssh_allowlist(args.staging_ssh_allowlist)
+        api_host = require_allowlisted_staging_ssh(args.api_host, allowlist)
     except ValueError as error:
         raise SystemExit(str(error))
     if not 4<=args.expected_clients<=10000:raise SystemExit('Expected client count outside probe scope')
     nodes=json.loads(args.inventory.read_text(encoding='utf-8-sig'))['generators']
     if not 1<=len(nodes)<=8 or any(not n.get('ownedForThisTest') or n.get('destroyed') is True for n in nodes):
         raise SystemExit('Refusing retired or unowned generator inventory')
+    try:
+        for node in nodes:
+            node['ip'] = require_allowlisted_staging_ssh(node.get('ip'), allowlist)
+    except ValueError as error:
+        raise SystemExit(str(error))
     expr="eval(Buffer.from('"+base64.b64encode(code.encode()).decode()+"','base64').toString())"
     subprocess.run(SSH+['root@'+api_host,'docker exec --env QSESSION_PROBE_CLEANUP_CLIENTS='+str(args.expected_clients)+' qsession-qsession-app-1 node -e "'+expr+'"'],check=True)
     def remove(node):
-        if not node['ownedForThisTest'] or not re.fullmatch(r'qsession-load-\d{8}-[a-z0-9-]{3,32}-chi[1-8]',node['label']) or node['ip'] in {'104.238.137.144','45.77.192.82','45.77.118.43'}:raise ValueError('scope')
+        if not node['ownedForThisTest'] or not re.fullmatch(r'qsession-load-\d{8}-[a-z0-9-]{3,32}-chi[1-8]',node['label']):raise ValueError('scope')
+        host = require_allowlisted_staging_ssh(node.get('ip'), allowlist)
         script='''import pathlib,stat
 p=pathlib.Path('/root/qsession-load-tokens.json')
 try:s=p.lstat()
@@ -50,7 +59,7 @@ else:
 '''
         import shlex
         command='python3 -c '+shlex.quote(script)
-        result=subprocess.run(SSH+['root@'+node['ip'],command],capture_output=True,timeout=20)
+        result=subprocess.run(SSH+['root@'+host,command],capture_output=True,timeout=20)
         return {'label':node['label'],'privateLeaseFileRemoved':result.returncode==0}
     with concurrent.futures.ThreadPoolExecutor(max_workers=7) as pool:
         for item in pool.map(remove,nodes):print(json.dumps(item),flush=True)

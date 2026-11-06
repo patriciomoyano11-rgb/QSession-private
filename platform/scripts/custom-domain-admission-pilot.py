@@ -63,7 +63,7 @@ def remote(host,command,data=None,timeout=30,acceptable=(0,)):
     return result.stdout
 
 
-def upload_tools():
+def upload_tools(encoder_host):
     names=('hls-load-client.py','synthetic-hls-origin.py','run-hls-admission-pilot.py')
     payload={name:base64.b64encode((ROOT/'platform/scripts'/name).read_bytes()).decode() for name in names}
     script=r'''
@@ -90,18 +90,28 @@ for name,encoded in data.items():
  out.append({'name':name,'sha256':hashlib.sha256(content).hexdigest()})
 print(json.dumps({'uploadedTools':out}))
 '''
-    return json.loads(remote(ENCODER,'python3 -c '+shlex.quote(script),json.dumps(payload).encode()))
+    return json.loads(remote('root@'+encoder_host,'python3 -c '+shlex.quote(script),json.dumps(payload).encode()))
 
 
-def main(destination, transport='stdlib'):
+def main(destination, transport='stdlib', delivery_host=None, app_host=None, encoder_host=None, allowlist=''):
     if transport not in ('stdlib','aiohttp'):raise ValueError('Unsupported transport')
-    report={'synthetic':True,'deliveryHost':'live.qsession.org','requestedClients':1,
+    import sys as _sys
+    _sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    from load_target_policy import (
+        parse_staging_ssh_allowlist, require_allowlisted_staging_ssh, require_staging_delivery_host)
+    hosts = parse_staging_ssh_allowlist(allowlist)
+    require_staging_delivery_host(delivery_host)
+    app = require_allowlisted_staging_ssh(app_host, hosts)
+    encoder = require_allowlisted_staging_ssh(encoder_host, hosts)
+    if app == '104.238.137.144' or encoder == '45.77.192.82':
+        raise ValueError('Production pilot targets are refused')
+    report={'synthetic':True,'deliveryHost':delivery_host,'requestedClients':1,
             'certifiesProductionCapacity':False,'resourcesProvisioned':0}
     prepared=False
     private=None
     try:
-        report['tools']=upload_tools()
-        private=json.loads(remote(PRODUCTION,'docker exec -i '+APP+' node -',PREPARE.encode()))
+        report['tools']=upload_tools(encoder)
+        private=json.loads(remote('root@'+app,'docker exec -i '+APP+' node -',PREPARE.encode()))
         prepared=True
         script=r'''
 import sys,json,pathlib,os,stat,re
@@ -114,16 +124,16 @@ if path.exists():
 fd=os.open(path,os.O_WRONLY|os.O_CREAT|os.O_TRUNC|os.O_NOFOLLOW,0o600)
 with os.fdopen(fd,'w') as output:json.dump(tokens,output)
 '''
-        remote(ENCODER,'python3 -c '+shlex.quote(script),json.dumps([private['token']]).encode())
+        remote('root@'+encoder,'python3 -c '+shlex.quote(script),json.dumps([private['token']]).encode())
         # Independent bounded lifetime; the origin also has its own 90-second deadline.
-        report['pilot']=json.loads(remote(ENCODER,
-            'timeout --signal=TERM --kill-after=5s 145s /opt/qsession-encoder/probe-venv/bin/python /opt/qsession-encoder/ops/run-hls-admission-pilot.py --delivery-host live.qsession.org --transport '+transport,
+        report['pilot']=json.loads(remote('root@'+encoder,
+            'timeout --signal=TERM --kill-after=5s 145s /opt/qsession-encoder/probe-venv/bin/python /opt/qsession-encoder/ops/run-hls-admission-pilot.py --delivery-host '+shlex.quote(delivery_host)+' --transport '+transport,
             timeout=160,acceptable=(0,2)))
     except Exception as error:
         report['errorClass']=type(error).__name__
     finally:
         if prepared:
-            try:report['leaseCleanup']=json.loads(remote(PRODUCTION,'docker exec -i '+APP+' node -',FINISH.encode()))
+            try:report['leaseCleanup']=json.loads(remote('root@'+app,'docker exec -i '+APP+' node -',FINISH.encode()))
             except Exception as error:report['leaseCleanupErrorClass']=type(error).__name__
         if private:
             fingerprint=hashlib.sha256(json.dumps([private['token']]).encode()).hexdigest()
@@ -137,7 +147,7 @@ else:
  if hashlib.sha256(path.read_bytes()).hexdigest()!=expected:raise ValueError('different pilot owns file')
  path.unlink();print(json.dumps({'privateEncoderTokenFileRemoved':True}))
 '''
-            try:report['encoderCleanup']=json.loads(remote(ENCODER,'python3 -c '+shlex.quote(script),fingerprint.encode()))
+            try:report['encoderCleanup']=json.loads(remote('root@'+encoder,'python3 -c '+shlex.quote(script),fingerprint.encode()))
             except Exception as error:report['encoderCleanupErrorClass']=type(error).__name__
         report['passed']=(not report.get('errorClass') and report.get('pilot',{}).get('passed') is True
             and report.get('leaseCleanup',{}).get('activeAfterRelease')==0
@@ -155,5 +165,10 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=pathlib.Path,default=ROOT/'release/custom-domain-admission-pilot-20261018.json')
     parser.add_argument('--transport',choices=('stdlib','aiohttp'),default='stdlib')
+    parser.add_argument('--delivery-host', required=True)
+    parser.add_argument('--app-host', required=True)
+    parser.add_argument('--encoder-host', required=True)
+    parser.add_argument('--staging-ssh-allowlist', required=True)
     args=parser.parse_args()
-    raise SystemExit(main(args.output,args.transport))
+    raise SystemExit(main(args.output, args.transport, args.delivery_host, args.app_host,
+                          args.encoder_host, args.staging_ssh_allowlist))

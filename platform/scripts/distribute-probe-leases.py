@@ -12,7 +12,8 @@ import sys
 import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from load_target_policy import require_staging_delivery_host, require_staging_ssh_host
+from load_target_policy import (
+    parse_staging_ssh_allowlist, require_allowlisted_staging_ssh, require_staging_delivery_host)
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 IDENTITY='C:/Users/maria/.ssh/qsession_deploy_ed25519'
@@ -20,10 +21,11 @@ BASE=['ssh','-T','-i',IDENTITY,'-o','BatchMode=yes','-o','IdentitiesOnly=yes',
       '-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12']
 
 
-def send(node,tokens):
+def send(node,tokens,allowlist):
+    host = require_allowlisted_staging_ssh(node.get('ip'), allowlist)
     command="python3 -c 'import os,json,sys;os.umask(0o077);data=json.load(sys.stdin);fd=os.open(\"/root/qsession-load-tokens.json\",os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600);f=os.fdopen(fd,\"w\");json.dump(data,f);f.close()'"
     try:
-        result=subprocess.run(BASE+['root@'+node['ip'],command],input=json.dumps(tokens).encode(),capture_output=True,timeout=15)
+        result=subprocess.run(BASE+['root@'+host,command],input=json.dumps(tokens).encode(),capture_output=True,timeout=15)
     except subprocess.TimeoutExpired:
         print(json.dumps({'transferFailure':node['label'],'category':'timeout'}),file=__import__('sys').stderr,flush=True)
         raise
@@ -43,6 +45,8 @@ if __name__=='__main__':
                         help='Staging playback hostname. Production hosts are refused.')
     parser.add_argument('--admission-host', required=True,
                         help='Staging API IPv4. The production app server is refused.')
+    parser.add_argument('--staging-ssh-allowlist', required=True,
+                        help='Comma-separated canonical staging IPv4 addresses.')
     parser.add_argument('--output',type=pathlib.Path,default=ROOT/'release/load-run-inventory-20261018.json')
     parser.add_argument('--mint-report',type=pathlib.Path,default=ROOT/'release/load-admission-mint-20261018.json')
     parser.add_argument('--clients', type=int, default=10000)
@@ -50,7 +54,10 @@ if __name__=='__main__':
     args=parser.parse_args()
     try:
         delivery_host = require_staging_delivery_host(args.delivery_host)
-        admission_host = require_staging_ssh_host(args.admission_host)
+        allowlist = parse_staging_ssh_allowlist(args.staging_ssh_allowlist)
+        admission_host = require_allowlisted_staging_ssh(args.admission_host, allowlist)
+        for node in json.loads(args.inventory.read_text(encoding='utf-8-sig'))['generators']:
+            require_allowlisted_staging_ssh(node.get('ip'), allowlist)
     except ValueError as error:
         raise SystemExit(str(error))
     if not 300<=args.minimum_remaining_seconds<=900:raise SystemExit('Invalid technical lease duration bound')
@@ -61,7 +68,7 @@ if __name__=='__main__':
     if not len(nodes)*4<=args.clients<=10000 or (args.clients+len(nodes)-1)//len(nodes)>1500:
         raise SystemExit('Client count exceeds the per-generator diagnostic bound')
     for i,node in enumerate(nodes):
-        if node['ip'] in {'104.238.137.144','45.77.192.82','45.77.118.43'}:raise SystemExit('Production target rejected')
+        node['ip'] = require_allowlisted_staging_ssh(node.get('ip'), allowlist)
         node['clients']=args.clients//len(nodes)+(i<args.clients%len(nodes))
     code=(ROOT/'platform/scripts/prepare-distributed-probe.cjs').read_text()
     # Source is evaluated inside /app, so resolve the installed module there.
@@ -77,7 +84,7 @@ if __name__=='__main__':
     cursor=0;tasks=[]
     with concurrent.futures.ThreadPoolExecutor(max_workers=7) as pool:
         for node in nodes:
-            count=node['clients'];tasks.append(pool.submit(send,node,private['tokens'][cursor:cursor+count]));cursor+=count
+            count=node['clients'];tasks.append(pool.submit(send,node,private['tokens'][cursor:cursor+count],allowlist));cursor+=count
         for task in tasks:task.result()
     inventory['runId']='qsession-probe-'+str(args.clients)+'-'+str(int(time.time()))
     inventory['startAtUnix']=int(time.time())+25

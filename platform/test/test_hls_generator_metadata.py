@@ -139,7 +139,7 @@ class GeneratorPartitions(unittest.TestCase):
         clean = orchestrator.validate_inventory(inventory,now=990)
         with mock.patch.object(orchestrator.subprocess,'run',return_value=types.SimpleNamespace(
                 returncode=0,stdout=b'{}',stderr=b'')) as process:
-            orchestrator.run_node(clean['generators'][0],clean)
+            orchestrator.run_node(clean['generators'][0],clean,allowlist=('8.8.8.8',))
         command = process.call_args.args[0]
         self.assertEqual(command[-5:-3],['8','8'])
         self.assertTrue(all(len(value)==64 for value in command[-3:]))

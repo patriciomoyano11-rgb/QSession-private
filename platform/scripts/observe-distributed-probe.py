@@ -8,7 +8,7 @@ import sys
 import threading
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from load_target_policy import require_staging_ssh_host
+from load_target_policy import parse_staging_ssh_allowlist, require_allowlisted_staging_ssh
 
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 code=r'''
@@ -77,9 +77,12 @@ if __name__=='__main__':
     parser.add_argument('--duration',type=int,default=125)
     parser.add_argument('--api-host', required=True,
                         help='Staging API IPv4. The production app server is refused.')
+    parser.add_argument('--staging-ssh-allowlist', required=True,
+                        help='Comma-separated canonical staging IPv4 addresses.')
     args=parser.parse_args()
     try:
-        api_host = require_staging_ssh_host(args.api_host)
+        api_host = require_allowlisted_staging_ssh(
+            args.api_host, parse_staging_ssh_allowlist(args.staging_ssh_allowlist))
     except ValueError as error:
         raise SystemExit(str(error))
     if not 125<=args.duration<=800:raise SystemExit('Invalid observation duration')

@@ -12,6 +12,7 @@ import urllib.request
 
 
 def main():
+    raise SystemExit('Refusing to diagnose the production playback host')
     headers={'User-Agent':'QSessionSignalVerification/1.0'}
     with urllib.request.urlopen(urllib.request.Request('https://qsession.org/api/rooms/DKTLF3/broadcast',headers=headers),timeout=10) as response:
         broadcast=json.load(response)['broadcast']

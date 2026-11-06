@@ -43,6 +43,8 @@ def problems_in(text):
     for route in parsed['routes']:
         if 'qsession.org' in route:
             problems.append(f'route {route} points at the production zone')
+    if not re.search(r'(?m)^QSESSION_EDGE_PROFILE\s*=\s*"staging"\s*$', text):
+        problems.append('staging profile must be set so a bare deploy fails closed')
     return problems
 
 

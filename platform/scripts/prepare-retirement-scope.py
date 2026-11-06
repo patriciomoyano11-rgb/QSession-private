@@ -149,6 +149,7 @@ def require_latest_edge_closure(closed,access,inventory):
 
 
 def main():
+    raise SystemExit('Refusing to SSH to the production encoder or transfer a provider credential')
     parser = argparse.ArgumentParser()
     parser.add_argument('--diagnostic', action='store_true')
     parser.add_argument('--approved-sustained-proposal', type=pathlib.Path)
@@ -272,7 +273,7 @@ print(json.dumps({'privateFilesStored':True}))
     KEY.unlink()
     ledger = dict(schemaVersion=1, runId=run_id, scope=scope, generators=[], activeCount=0,
                   candidateSourceSha256=candidate_proof['sourceSha256'],
-                  deliveryHost='live.qsession.org', resourcesCreated=0,
+                  resourcesCreated=0,
                   retirementScopeFingerprint=hashlib.sha256(json.dumps(scope, sort_keys=True).encode('utf8')).hexdigest(),
                   newBudget={'status':'approved', 'authorizationReference':scope['budgetAuthorizationReference'],
                              'additionalComputeLimitUsd':ceiling, 'previousObservedComputeUsd':previous_cost},

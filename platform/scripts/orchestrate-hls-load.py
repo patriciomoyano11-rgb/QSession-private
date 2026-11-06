@@ -21,10 +21,11 @@ import time
 import uuid
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-from load_target_policy import require_staging_delivery_host
+from load_target_policy import (
+    parse_staging_ssh_allowlist, require_allowlisted_staging_ssh, require_staging_delivery_host,
+    require_staging_ssh_host)
 
 IDENTITY = 'C:/Users/maria/.ssh/qsession_deploy_ed25519'
-PROTECTED_IPS = {'104.238.137.144', '45.77.192.82', '45.77.118.43'}
 
 REMOTE_SCRIPT = r'''
 import hashlib, json, math, os, pathlib, platform, runpy, signal, ssl, stat, subprocess, sys, time
@@ -239,9 +240,15 @@ def validate_inventory(inventory, now=None):
     for node in nodes:
         if not isinstance(node, dict) or node.get('ownedForThisTest') is not True or node.get('destroyed') is True:
             raise ValueError('Every generator requires explicit ownedForThisTest=true')
-        ip = ipaddress.ip_address(node.get('ip', ''))
-        if ip.version != 4 or not ip.is_global or str(ip) in PROTECTED_IPS:
+        raw_ip = node.get('ip', '')
+        try:
+            checked_ip = require_staging_ssh_host(raw_ip)
+        except ValueError:
+            raise ValueError('Only explicitly inventoried public IPv4 generators are accepted') from None
+        ip = ipaddress.ip_address(checked_ip)
+        if not ip.is_global:
             raise ValueError('Only explicitly inventoried public IPv4 generators are accepted')
+        node['ip'] = checked_ip
         provider_id = str(uuid.UUID(node.get('id', '')))
         label = node.get('label', '')
         if not re.fullmatch(r'qsession-load-[A-Za-z0-9_-]{1,80}', label):
@@ -269,9 +276,9 @@ def validate_inventory(inventory, now=None):
 def classify_steady_shortfall(steady, expected_clients, window_start, window_end, expected_count):
     """Label continuity against the scheduled window, not whichever samples arrived.
 
-    The first and last scheduled slots are ramp and deadline edges. A short
-    count there is endpoint-sample. A short count anywhere between them, or a
-    missing slot, is a real continuity failure.
+    The first and last scheduled slots may miss under 2 percent and must stay
+    above zero. A larger edge drop is endpoint-loss. An interior gap or a
+    missing slot is a real continuity failure. Neither class certifies capacity.
     """
     if not steady:
         return 'no-steady-samples'
@@ -282,21 +289,41 @@ def classify_steady_shortfall(steady, expected_clients, window_start, window_end
         return 'none'
     endpoints = {window_start, window_end}
     if all(item['elapsedSeconds'] in endpoints for item in short):
-        return 'endpoint-sample'
+        if all(endpoint_gap_is_minor(item.get('concurrentRecentMediaClients'), expected_clients) for item in short):
+            return 'endpoint-sample'
+        return 'endpoint-loss'
     return 'interior-or-sustained'
 
 
-def interior_delivery_complete(steady, expected_clients, window_start, window_end, expected_count):
-    """Every scheduled interior sample must show the full client count.
+def endpoint_gap_is_minor(recent, expected):
+    """A ramp-edge sample may miss under 2 percent. Zero or a real drop does not.
 
-    The slots at window_start and window_end may be short. A missing slot
-    anywhere in the window still fails: the edge pardon is not a hole.
+    1,484 of 1,500 is about 98.9 percent and counts as edge noise. 1,000 of
+    1,500 does not. This is a measurement tolerance, not a capacity result.
+    """
+    if type(recent) is not int or type(expected) is not int or expected < 1:
+        return False
+    if recent <= 0 or recent > expected:
+        return False
+    return recent * 50 >= expected * 49
+
+
+def interior_delivery_complete(steady, expected_clients, window_start, window_end, expected_count):
+    """Interior samples must be exact. Endpoint samples may be only slightly short.
+
+    A missing slot anywhere in the window still fails.
     """
     if len(steady) != expected_count:
         return False
     endpoints = {window_start, window_end}
-    return all(item['concurrentRecentMediaClients'] == expected_clients or item['elapsedSeconds'] in endpoints
-               for item in steady)
+    for item in steady:
+        recent = item.get('concurrentRecentMediaClients')
+        if item['elapsedSeconds'] in endpoints:
+            if recent != expected_clients and not endpoint_gap_is_minor(recent, expected_clients):
+                return False
+        elif recent != expected_clients:
+            return False
+    return True
 
 
 def longest_consecutive_run(indices):
@@ -484,14 +511,16 @@ def aggregate(inventory, results):
             'failureReasons':failures,'httpDeliveryChecksPassed':not failures,
             'decodedPlaybackTested':False,'backendActiveLeasesVerifiedByThisTool':False,
             'certifiesProductionCapacity':False,
-            'interpretation':'Aligned recent segment receipts, not decoded playback. A short first or last steady sample does not fail the run. An interior gap does. CPU or NIC saturation makes generator capacity inconclusive. Backend lease counts require a separate observation.'}
+            'interpretation':'Aligned recent segment receipts, not decoded playback. An endpoint sample passes only when it keeps more than zero clients and at least 98 percent of the requested count. A larger edge drop, an interior gap, or a missing slot fails the run. This does not measure decoded playback, NIC headroom, or capacity at 1,500 or 10,000. CPU or NIC saturation makes generator capacity inconclusive. Backend lease counts require a separate observation.'}
 
 
-def run_node(node, inventory, provenance=None):
+def run_node(node, inventory, provenance=None, allowlist=()):
+    # Positive allowlist before SSH. A protected address is rejected even if named.
+    host = require_allowlisted_staging_ssh(node.get('ip'), allowlist)
     provenance = provenance or reproducibility_metadata(inventory)
     command = ['ssh','-T','-i',IDENTITY,'-o','BatchMode=yes','-o','IdentitiesOnly=yes',
                '-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12',
-               'root@'+node['ip'],'/usr/bin/python3','-',inventory['runId'],str(inventory['startAtUnix']),str(node.get('clients',1250)),
+               'root@'+host,'/usr/bin/python3','-',inventory['runId'],str(inventory['startAtUnix']),str(node.get('clients',1250)),
                inventory['deliveryHost'], inventory.get('httpTransport', 'stdlib'),
                str(timing(inventory)[0]), str(timing(inventory)[1]), str(workers_per_node(node)),
                str(node.get('logicalCpuCount',4)), provenance['clientSha256'],
@@ -511,13 +540,16 @@ def run_node(node, inventory, provenance=None):
 
 
 def main(args):
+    allowlist = parse_staging_ssh_allowlist(getattr(args, 'staging_ssh_allowlist', None))
     inventory = validate_inventory(json.loads(args.inventory.read_text(encoding='utf-8-sig')))
+    for node in inventory['generators']:
+        require_allowlisted_staging_ssh(node['ip'], allowlist)
     provenance = reproducibility_metadata(inventory)
     if not pathlib.Path(IDENTITY).is_file():
         raise ValueError('Expected existing deployment identity is missing')
     ordered = [None]*len(inventory['generators'])
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(ordered)) as pool:
-        pending = {pool.submit(run_node,node,inventory,provenance):index for index,node in enumerate(inventory['generators'])}
+        pending = {pool.submit(run_node,node,inventory,provenance,allowlist):index for index,node in enumerate(inventory['generators'])}
         for future in concurrent.futures.as_completed(pending):
             index = pending[future]
             ordered[index] = future.result()
@@ -543,6 +575,8 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inventory',type=pathlib.Path,required=True)
     parser.add_argument('--output',type=pathlib.Path,required=True)
+    parser.add_argument('--staging-ssh-allowlist', required=True,
+                        help='Comma-separated canonical staging IPv4 addresses. Empty refuses every SSH target.')
     args=parser.parse_args()
     try:
         raise SystemExit(main(args))

@@ -53,9 +53,18 @@ def require_staging_delivery_host(host):
     import re as _re
     if type(host) is not str:
         raise ValueError('A staging delivery host is required')
-    normalized = host.strip().lower().rstrip('.')
-    if not _re.fullmatch(r'(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}', normalized):
+    raw = host.strip().lower()
+    if '://' in raw or '@' in raw or '/' in raw or '\\' in raw or ':' in raw or any(character.isspace() for character in raw):
         raise ValueError('A staging delivery host is required')
+    if raw.endswith('.'):
+        raw = raw[:-1]
+    if not raw or '..' in raw:
+        raise ValueError('A staging delivery host is required')
+    if not _re.fullmatch(r'(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}', raw):
+        raise ValueError('A staging delivery host is required')
+    if _re.fullmatch(r'(?:\d{1,3}\.){3}\d{1,3}', raw):
+        raise ValueError('A staging delivery host is required')
+    labels = raw.split('.')
     production = {
         'live.qsession.org',
         'www.qsession.org',
@@ -63,13 +72,17 @@ def require_staging_delivery_host(host):
         'media.qsession.org',
         'qsession-live.patriciomoyano11.workers.dev',
     }
-    if normalized in production or normalized.endswith('.qsession.org'):
+    if raw in production or raw == 'qsession.org' or raw.endswith('.qsession.org'):
         raise ValueError('Production delivery hosts are refused; pass a staging hostname')
-    labels = normalized.split('.')
-    if not any(label == 'staging' or label.startswith('staging-')
-               or label.endswith('-staging') or '-staging-' in label for label in labels):
+    for index in range(len(labels) - 1):
+        if labels[index] == 'qsession' and labels[index + 1] == 'org':
+            raise ValueError('Production delivery hosts are refused; pass a staging hostname')
+    if raw.endswith('.workers.dev') and not (labels[0] == 'qsession-live-staging' or (labels[0].endswith('-staging') and labels[0] != 'qsession-live')):
+        raise ValueError('workers.dev playback must use the staging worker name')
+    if not any(label == 'staging' or label.startswith('staging-') or label.endswith('-staging') or '-staging-' in label
+               for label in labels):
         raise ValueError('Staging delivery host must include a staging DNS label')
-    return normalized
+    return raw
 SEGMENT_SECONDS = 6
 RECENT_MEDIA_SECONDS = 12
 STALL_SECONDS = 18
@@ -102,16 +115,9 @@ STDLIB_CONNECTION_LOCK = threading.Lock()
 STDLIB_HTTP_WORKERS = 96
 
 
-def configure_delivery_host(host, *, allow_known_canary=False):
-    """Select a staging playback host. Load CLIs cannot opt into production.
-
-    ``allow_known_canary`` exists for the one-client PRB10A pilot. The load
-    client command line never sets it.
-    """
-    if allow_known_canary and host in KNOWN_CANARY_HOSTS:
-        selected = host
-    else:
-        selected = require_staging_delivery_host(host)
+def configure_delivery_host(host, **_ignored):
+    """Select a staging playback host. Historical canary flags do not bypass this."""
+    selected = require_staging_delivery_host(host)
     global HOST, URL
     HOST = selected
     URL = 'https://' + HOST + PREFIX + 'index.m3u8'

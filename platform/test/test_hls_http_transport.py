@@ -98,9 +98,9 @@ class ProbeDomainScope(unittest.TestCase):
                 client.configure_delivery_host(host)
             self.assertEqual(client.URL, initial)
 
-    def test_known_canary_opt_in_is_not_the_load_default(self):
-        client.configure_delivery_host('live.qsession.org', allow_known_canary=True)
-        self.assertEqual(client.HOST, 'live.qsession.org')
+    def test_historical_canary_flag_cannot_select_production(self):
+        with self.assertRaises(ValueError):
+            client.configure_delivery_host('live.qsession.org', allow_known_canary=True)
         with self.assertRaises(ValueError):
             client.configure_delivery_host('live.qsession.org')
 

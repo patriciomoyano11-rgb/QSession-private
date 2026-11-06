@@ -1,8 +1,8 @@
 """Staging-only targets for HLS load tools.
 
 Load entry points call these helpers and refuse production by default.
-There is no environment-variable override. A one-client canary can opt in
-only through an explicit argument that the load CLIs do not expose.
+There is no environment-variable override and no canary flag that selects
+a production host, bucket, or SSH target.
 
 The playback-host check lives in hls-load-client.py because that file is the
 one uploaded to a generator. This module re-exports it so the operator-side
@@ -38,25 +38,55 @@ PROTECTED_SSH_HOSTS = frozenset({
     '104.238.137.144',
     '45.77.192.82',
     '45.77.118.43',
+    '45.76.25.22',
 })
 PRODUCTION_BUCKETS = frozenset({'qsession-live', 'qsession-live-preview'})
 PRODUCTION_R2_ENDPOINT = 'https://b3d60daa8319692b18a8bef39b34f14d.r2.cloudflarestorage.com'
 
 
 def require_staging_ssh_host(host):
-    """Refuse the permanent production servers and non-routable addresses."""
-    if type(host) is not str or not host:
-        raise ValueError('A staging SSH host is required')
-    try:
-        ip = ipaddress.ip_address(host)
-    except ValueError as error:
-        raise ValueError('Staging SSH host must be an IPv4 address') from error
-    if (ip.version != 4 or str(ip) in PROTECTED_SSH_HOSTS or ip.is_loopback
-            or ip.is_multicast or ip.is_unspecified or ip.is_link_local or ip.is_reserved):
+    """Accept only a canonical dotted IPv4 address.
+
+    Leading zeros, hex, integer form and IPv6-mapped text are rejected so a
+    production address cannot be disguised. Being canonical is not permission
+    to connect: callers must also pass require_allowlisted_staging_ssh.
+    """
+    if type(host) is not str:
+        raise ValueError('Staging SSH host must be a canonical IPv4 address')
+    text = host.strip()
+    if not re.fullmatch(r'(?:(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])\.){3}'
+                        r'(?:25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9][0-9]|[0-9])', text):
+        raise ValueError('Staging SSH host must be a canonical IPv4 address')
+    if any(len(part) > 1 and part.startswith('0') for part in text.split('.')):
+        raise ValueError('Staging SSH host rejects encoded addresses')
+    ip = ipaddress.ip_address(text)
+    if (str(ip) in PROTECTED_SSH_HOSTS or ip.is_loopback or ip.is_multicast
+            or ip.is_unspecified or ip.is_link_local or ip.is_reserved):
         raise ValueError('Production and non-routable SSH targets are refused')
     if not (ip.is_global or ip.is_private):
         raise ValueError('Staging SSH host must be a private or public IPv4 address')
     return str(ip)
+
+
+def parse_staging_ssh_allowlist(raw):
+    """Positive allowlist. Empty means no SSH target is permitted."""
+    if type(raw) is not str or not raw.strip():
+        raise ValueError('A staging SSH allowlist is required')
+    found = []
+    for part in raw.split(','):
+        item = part.strip()
+        if item:
+            found.append(require_staging_ssh_host(item))
+    if not found:
+        raise ValueError('A staging SSH allowlist is required')
+    return tuple(dict.fromkeys(found))
+
+
+def require_allowlisted_staging_ssh(host, allowlist):
+    normalized = require_staging_ssh_host(host)
+    if normalized not in allowlist:
+        raise ValueError('SSH target is outside the staging allowlist')
+    return normalized
 
 
 def require_staging_storage(endpoint, bucket):

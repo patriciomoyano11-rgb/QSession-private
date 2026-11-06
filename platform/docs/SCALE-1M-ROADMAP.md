@@ -47,7 +47,7 @@ Un generador a 1.500 oyentes del perfil ensayado tiene que absorber del orden de
 
 ### Artefacto del laboratorio: la continuidad de 1.500
 
-La falla de 1.500 es un artefacto de medición en un solo generador. La entrega HTTP de esa ejecución estuvo limpia. El agregador ahora exige el aforo completo solo entre el segundo 40 y el penúltimo de la ventana. Una muestra corta en el segundo 38 o en el último queda como `endpoint-sample` y no suspende la tanda. Un hueco interior sigue suspendiéndola. La tanda histórica del 20 de octubre no se reescribe: en su momento el criterio incluía los extremos y el resultado archivado sigue siendo fallido. El Worker no cambia por este caso.
+La falla de 1.500 es un artefacto de medición en un solo generador. La entrega HTTP de esa ejecución estuvo limpia. El agregador exige el aforo exacto en el interior de la ventana. En el primer y el último slot se tolera solo un faltante menor al 2 % y mayor que cero: 1.484 de 1.500 entra; 1.000 de 1.500 o cero no, y se clasifica como `endpoint-loss`. Un hueco interior sigue suspendiendo la tanda. Esa tolerancia no certifica 1.500 ni 10.000: no mide NIC, decodificación ni errores HTTP. La tanda histórica del 20 de octubre no se reescribe.
 
 ### Cuellos de plataforma, vistos en las tandas de 10.000 y en el código
 
@@ -69,14 +69,14 @@ Esas tandas mezclan saturación del generador con errores HTTP. No hay una causa
 
 ## 3. Cambios de este cambio
 
-Se implementó lo que un test local puede comprobar. El Worker no se modificó.
+Se implementó lo que un test local puede comprobar. El Worker de reproducción vuelve a comprobar Redis en cada GET.
 
-- `platform/scripts/load_target_policy.py` rechaza los hosts de reproducción de producción (`live.qsession.org`, `qsession.org` y cualquier subdominio, `www`, `media`, y `qsession-live.patriciomoyano11.workers.dev`), las tres IPv4 permanentes (104.238.137.144, 45.77.192.82, 45.77.118.43) y el bucket y el endpoint R2 de producción. Un hostname de carga tiene que llevar una etiqueta DNS `staging` (o `staging-` / `-staging`). No hay variable de entorno que lo desactive. La comprobación del hostname vive dentro de `hls-load-client.py`, que es el único archivo que se sube al generador; el orquestador copia esa misma función al controlador remoto.
-- El cliente de carga, el orquestador (también el script que corre dentro del generador), el publicador sintético, el minteo de concesiones, el observador Redis y la limpieza exigen ese destino. `run-custom-domain-load.py` corta antes de cualquier SSH si faltan `--delivery-host`, `--encoder-host` y `--api-host` de staging.
-- El piloto de un cliente conserva `--known-canary` / `allow_known_canary=True` para los dos hostnames históricos de PRB10A. Los comandos de carga no lo activan.
-- El agregador añade `steadyShortfallClass`: `none`, `endpoint-sample`, `interior-or-sustained`, `incomplete-window` o `no-steady-samples`. El aprobado exige todas las muestras interiores (del segundo 40 al penúltimo). Una o las dos muestras extremas pueden ir cortas. Si falta un slot, aunque sea un extremo, la tanda falla.
-- El Worker, por defecto, acepta el segmento si el token HMAC es válido y no venció. No llama a Redis en cada GET. `QSESSION_ADMISSION_BACKEND=required` recupera la comprobación anterior. Una expulsión espera a que venza el token. Un token inválido o vencido sigue en 403 y no lee R2.
-- Si la caché rechaza la escritura pero el cuerpo ya se leyó completo (hasta 8 MiB el segmento, 64 KiB el índice), la respuesta sale igual, con `X-QSession-Cache-Fill-State: verified`. Un cuerpo a medias sigue siendo 503.
+- `platform/scripts/load_target_policy.py` rechaza los hosts de reproducción de producción (`live.qsession.org`, `qsession.org` y cualquier subdominio, `www`, `media`, y `qsession-live.patriciomoyano11.workers.dev`), también si van con punto final, mayúsculas o como etiquetas `qsession` + `org` dentro de otro nombre. Rechaza las IPv4 permanentes 104.238.137.144, 45.77.192.82, 45.77.118.43 y 45.76.25.22, incluso con ceros a la izquierda, forma entera o IPv6 mapeada, y el bucket y el endpoint R2 de producción. Un hostname de carga tiene que llevar una etiqueta DNS `staging` (o `staging-` / `-staging`). No hay variable de entorno que lo desactive. La comprobación del hostname vive dentro de `hls-load-client.py`, que es el único archivo que se sube al generador; el orquestador copia esa misma función al controlador remoto.
+- El cliente de carga, el orquestador, el publicador sintético, el minteo, el observador Redis y la limpieza exigen ese destino. SSH solo sale si la IPv4 está en `--staging-ssh-allowlist` y no es una de las permanentes. La lista vacía no autoriza nada. `run-custom-domain-load.py` corta antes de cualquier SSH si faltan el host de reproducción, el codificador, la API o esa lista.
+- El piloto y `--known-canary` ya no pueden elegir `live.qsession.org` ni el bucket de producción. SSH exige una allowlist explícita de IPv4 canónicas; una dirección de producción se rechaza aunque alguien la escriba en esa lista.
+- El agregador añade `steadyShortfallClass`. El interior tiene que coincidir con el aforo. Un extremo solo pasa si conserva al menos el 98 % de los clientes y no llega a cero. Una caída mayor es `endpoint-loss` y suspende la tanda. Eso no demuestra capacidad.
+- Cada GET de reproducción sigue comprobando la concesión en Redis. Una variable ausente, vacía o mal escrita no salta ese chequeo. El token emitido puede durar hasta 6 horas y la plaza unos 90 segundos; no hay un modo que trate el vencimiento del token como revocación.
+- Si la caché rechaza la escritura pero el cuerpo se leyó completo, la respuesta sale con `X-QSession-Cache-Fill-State: verified`. Esos buffers comparten 32 MiB y 4 objetos, y se liberan al terminar, fallar o cancelar. Un cuerpo a medias o sin presupuesto sigue en 503. Esto no elimina la sobrecarga de lecturas R2 ni de la cola.
 
 Pruebas locales: `python3 -m unittest discover -s test -p 'test_hls_*.py'` y `test_load_target_policy.py` desde `platform/`. No sustituyen una carga.
 
@@ -96,7 +96,7 @@ Nombres propuestos, todos distintos de producción:
 | Codificador | 45.77.192.82 | Otra VM, sin las claves S3 del bucket de producción |
 | Sala técnica | `PRB10A` en el bucket real | Un código que no sea una sala en emisión, en el bucket de staging |
 
-La cuenta de Cloudflare del staging debería ser otra. Si tiene que ser la misma cuenta, el Worker de staging no lleva la ruta `live.qsession.org` y el token de API de R2 solo puede leer y escribir `qsession-live-staging`.
+Otra cuenta de Cloudflare separa credenciales y factura. No es obligatoria para usar otro nombre de Worker y otro bucket, y tampoco garantiza por sí sola que la API, Redis y el codificador estén aislados. El Worker de staging no debe llevar la ruta `live.qsession.org`. El token de R2, si se crea, debe limitarse a `qsession-live-staging`. Sin secreto de admisión, sala y API https fuera de `qsession.org`, el perfil `staging` responde 503 y no lee el bucket.
 
 ### Configuración que hay que aplicar cuando exista el entorno
 
@@ -140,24 +140,25 @@ python3 platform/scripts/run-custom-domain-load.py \
   --delivery-host live.staging.qsession.test \
   --encoder-host 10.8.0.5 \
   --api-host 10.8.0.6 \
+  --staging-ssh-allowlist 10.8.0.5,10.8.0.6 \
   --inventory <inventario-de-staging> \
   --suffix media-staging-1000 \
   --clients 1000 --hold 60 --transport aiohttp
 ```
 
-Las direcciones del ejemplo son de documentación privada. Hay que sustituirlas por las IPv4 del staging. 104.238.137.144, 45.77.192.82 y 45.77.118.43 las rechaza el proceso antes de abrir SSH.
+Las direcciones del ejemplo son de documentación privada. Hay que sustituirlas por las IPv4 del staging y repetir en la allowlist cada generador al que se vaya a abrir SSH. 104.238.137.144, 45.77.192.82, 45.77.118.43 y 45.76.25.22 se rechazan antes de abrir SSH, aunque figuren en esa lista.
 
-`prepare-retirement-scope.py` todavía puede anotar `deliveryHost=live.qsession.org` en un libro de una tanda histórica. El orquestador rechaza ese valor. Un inventario nuevo tiene que traer el hostname de staging.
+`prepare-retirement-scope.py` ya no transfiere una credencial al codificador de producción: sale antes de SSH. Un inventario de carga tiene que traer el hostname de staging. El orquestador rechaza `live.qsession.org`.
 
 ## 5. Escalera 1.500 → 10.000 → 100.000 → 1.000.000
 
-Cada peldaño se corre en staging, con presupuesto y retirada propios. Un fallo interior para el avance. Una muestra extrema corta, con el HTTP en cero, no basta para declarar que el borde no aguanta. Sigue haciendo falta NIC medida. El Worker no se cambia por un `endpoint-sample`.
+Cada peldaño se corre en staging, con presupuesto y retirada propios. Un fallo interior detiene el avance. Un extremo con cero clientes o con una caída mayor al 2 % también lo detiene: eso es `endpoint-loss`, no ruido de rampa. Una muestra extrema que conserva al menos el 98 % no demuestra que el borde aguante. Sigue haciendo falta NIC medida.
 
 ### 1.500, repetir en staging para cerrar el artefacto
 
 - Dos generadores como mínimo, cada uno por debajo de la mitad de su NIC medida. 1.500 × 1,7 Mb/s son 2,55 Gb/s: una sola VM barata está en el límite o por encima.
 - Publicar en el informe `steadyShortfallClass`, CPU steal, `rxMbps` y la velocidad de enlace. Si la NIC no se observa, la tanda es inconclusa aunque el HTTP salga limpio.
-- Hold de 60 s. El interior, del segundo 40 al 86, tiene que mostrar 1.500 receptores recientes en cada muestra. Un `endpoint-sample` con contadores HTTP a cero cierra el artefacto. Un hueco interior (`interior-or-sustained`) detiene el avance.
+- Hold de 60 s. El interior, del segundo 40 al 86, tiene que mostrar 1.500 receptores recientes en cada muestra. Un `endpoint-sample` solo admite el faltante de rampa menor al 2 % y mayor que cero, por ejemplo 1.484 de 1.500. Cero o 1.000 de 1.500 es `endpoint-loss` y no cierra el artefacto. Un hueco interior (`interior-or-sustained`) detiene el avance. Ninguna de esas clases certifica 1.500 ni 10.000.
 
 ### 10.000, primer objetivo del producto
 
@@ -273,7 +274,7 @@ La orquestación ya para por errores persistentes (más del 10 % y más de 100) 
 - Edad del manifiesto por encima de dos segmentos, o Egress distinto de activo.
 - El gasto acumulado de la tanda cruza el techo autorizado. La reserva no es el cargo; el aborto usa el techo igual.
 
-Un solo `endpoint-sample` con el resto de contadores a cero no aborta el diagnóstico: se etiqueta y se archiva. No se reintenta la misma tanda en automático.
+Un `endpoint-sample` dentro del 2 % se etiqueta y no se reintenta solo. Un `endpoint-loss`, incluido un extremo en cero, aborta el diagnóstico. No se reintenta la misma tanda en automático.
 
 Hace falta exportar, sin tokens ni claves de objeto, la tasa de HIT de la clave canónica, la fase de admisión y la edad del manifiesto. El Worker ya emite códigos constantes como máximo una vez cada 30 s por isolate; el panel de Cloudflare tiene que ser la fuente del aborto, no solo el JSON del generador.
 
@@ -295,4 +296,4 @@ Partir la prueba en piezas que quepan en pocas máquinas:
 
 Este texto no certifica 10.000 ni 1 millón. No cambia el aforo de una sala real. No despliega el Worker ni crea el bucket de staging. La decodificación en Windows, Chrome y Android, el cambio de red y el bloqueo de pantalla siguen pendientes sobre la ruta protegida, igual que antes.
 
-El siguiente trabajo de producto, en orden: montar el staging de la sección 4, repetir 1.500 con NIC medida, y solo entonces una tanda de 10.000 cuyo aborto distinga `endpoint-sample` de un 503 de admisión o de caché.
+El siguiente trabajo de producto, en orden: montar el staging de la sección 4, repetir 1.500 con NIC medida, y solo entonces una tanda de 10.000. Un `endpoint-sample` no es esa medición. Este documento no declara 10.000 listo.

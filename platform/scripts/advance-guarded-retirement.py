@@ -30,6 +30,7 @@ print(json.dumps({'previousRetireAt':old,'scope':scope,'scopeFingerprint':hashli
 '''
 
 def main():
+    raise SystemExit('Refusing to SSH to the production encoder')
     parser=argparse.ArgumentParser()
     parser.add_argument('--inventory',type=pathlib.Path,default=LEDGER)
     parser.add_argument('--execution',type=pathlib.Path,default=ROOT/'release/custom-domain-load-execution-shared-edge-aiohttp-20261020.json')

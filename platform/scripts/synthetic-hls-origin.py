@@ -21,12 +21,10 @@ import time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from load_target_policy import (
-    KNOWN_CANARY_HOSTS, PRODUCTION_R2_ENDPOINT,
-    require_staging_delivery_host, require_staging_storage)
+    PRODUCTION_R2_ENDPOINT, require_staging_delivery_host, require_staging_storage)
 
 CREDENTIALS = '/opt/qsession-encoder/private/probe-storage.json'
-# Historical production destination. Load publication refuses these unless
-# --known-canary is set for the one-client PRB10A pilot.
+# Historical production destination. Publication refuses these values.
 ENDPOINT = PRODUCTION_R2_ENDPOINT
 BUCKET = 'qsession-live'
 PREFIX = 'live/PRB10A-hWrdBkirH_2yHmZ9lp/'
@@ -112,13 +110,9 @@ def read_control_stop(source, run_id, stop):
 
 
 def destination(args, storage):
-    """Staging by default. --known-canary keeps the historical one-client pilot."""
+    """Staging storage only. The historical canary flag cannot select production."""
     if getattr(args, 'known_canary', False) is True:
-        if args.delivery_host not in KNOWN_CANARY_HOSTS:
-            raise ValueError('Known canary playback is limited to the historical PRB10A hostnames')
-        if storage.get('endpoint') != ENDPOINT or storage.get('bucket') != BUCKET:
-            raise ValueError('Known canary storage destination does not match the historical bucket')
-        return args.delivery_host, ENDPOINT, BUCKET
+        raise ValueError('Production canary publication is disabled')
     host = require_staging_delivery_host(args.delivery_host)
     endpoint, bucket = require_staging_storage(storage.get('endpoint'), storage.get('bucket'))
     return host, endpoint, bucket
@@ -126,10 +120,9 @@ def destination(args, storage):
 
 def main(args):
     # Reject a production playback host before opening storage credentials.
-    if getattr(args, 'known_canary', False) is not True:
-        require_staging_delivery_host(args.delivery_host)
-    elif args.delivery_host not in KNOWN_CANARY_HOSTS:
-        raise ValueError('Known canary playback is limited to the historical PRB10A hostnames')
+    if getattr(args, 'known_canary', False) is True:
+        raise ValueError('Production canary publication is disabled')
+    require_staging_delivery_host(args.delivery_host)
     storage = read_credentials()
     delivery_host, endpoint, bucket = destination(args, storage)
     from botocore.config import Config
@@ -272,9 +265,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--duration', type=int, default=180)
     parser.add_argument('--delivery-host', required=True,
-                        help='Staging playback hostname. Production hosts require --known-canary.')
+                        help='Staging playback hostname. Production hosts are refused.')
     parser.add_argument('--known-canary', action='store_true',
-                        help='One-client PRB10A pilot only. Load runs must not set this.')
+                        help='Disabled. Production publication is refused before any storage call.')
     parser.add_argument('--control-stdin',action='store_true')
     args = parser.parse_args()
     if not 12 <= args.duration <= 864 or args.duration % SEGMENT_SECONDS:
