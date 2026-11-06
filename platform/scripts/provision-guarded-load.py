@@ -143,6 +143,7 @@ def validate_staged_confirmation(ledger, release):
 
 
 def main():
+    raise SystemExit('Refusing to SSH to the production encoder')
     parser=argparse.ArgumentParser()
     parser.add_argument('--inventory',type=pathlib.Path,default=LEDGER)
     parser.add_argument('--additional-generators',type=int)

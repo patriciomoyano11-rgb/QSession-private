@@ -171,8 +171,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser=argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--delivery-host', choices=('qsession-live.patriciomoyano11.workers.dev','live.qsession.org'),
-                        default='qsession-live.patriciomoyano11.workers.dev')
+    parser.add_argument('--delivery-host', required=True,
+                        help='Staging playback hostname. Production hosts are refused.')
     parser.add_argument('--transport', choices=('stdlib','aiohttp'), default='stdlib')
     args=parser.parse_args()
     try:

@@ -1,0 +1,25 @@
+# Staging only. Never attach live.qsession.org or the production bucket.
+# Deploy with: npx wrangler deploy --config wrangler.staging.toml
+# from platform/edge, after `npx wrangler login` on the account that should own
+# this Worker. Another account is optional; it does not prove full isolation.
+name = "qsession-live-staging"
+main = "hls-worker.js"
+compatibility_date = "2026-09-23"
+workers_dev = true
+
+[[r2_buckets]]
+binding = "QSESSION_LIVE"
+bucket_name = "qsession-live-staging"
+preview_bucket_name = "qsession-live-staging-preview"
+
+[vars]
+QSESSION_EDGE_PROFILE = "staging"
+
+# A second Cloudflare account separates credentials and billing. It is not
+# required for this file to name a different Worker and bucket, and it does
+# not by itself prove that the API, Redis and encoder are separate.
+# The admission secret is not stored here. Until the dashboard has a secret of
+# at least 32 bytes, a six-character room and an https API outside
+# qsession.org, every request fails closed. Playback still checks the Redis
+# lease. Do not add a mode that skips that check: issued tokens can last
+# hours while a seat lasts about 90 seconds.

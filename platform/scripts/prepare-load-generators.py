@@ -9,17 +9,20 @@ import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 IDENTITY = 'C:/Users/maria/.ssh/qsession_deploy_ed25519'
+sys_path = pathlib.Path(__file__).resolve().parent
+import sys
+sys.path.insert(0, str(sys_path))
+from load_target_policy import parse_staging_ssh_allowlist, require_allowlisted_staging_ssh
 
 
-def check_scope(node):
+def check_scope(node, allowlist=()):
     if not node['ownedForThisTest'] or node.get('destroyed') is True or not re.fullmatch(r'qsession-load-\d{8}-[a-z0-9-]{3,32}-chi[1-8]', node['label']):
         raise ValueError('Not a disposable test VM')
-    if node['ip'] in {'104.238.137.144','45.77.192.82','45.77.118.43'}:
-        raise ValueError('Production target rejected')
+    node['ip'] = require_allowlisted_staging_ssh(node.get('ip'), allowlist)
 
 
-def accept_host(node):
-    check_scope(node)
+def accept_host(node, allowlist):
+    check_scope(node, allowlist)
     # OpenSSH does not serialize simultaneous additions to Windows known_hosts.
     # Seed only new inventoried hosts sequentially; changed keys still fail.
     command=['ssh','-T','-i',IDENTITY,'-o','BatchMode=yes','-o','IdentitiesOnly=yes',
@@ -28,8 +31,8 @@ def accept_host(node):
     if result.returncode:raise RuntimeError('Scoped generator host verification failed')
 
 
-def prepare(node):
-    check_scope(node)
+def prepare(node, allowlist=()):
+    check_scope(node, allowlist)
     ssh = ['ssh','-T','-i',IDENTITY,'-o','BatchMode=yes','-o','IdentitiesOnly=yes',
            '-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12','root@'+node['ip']]
     probe = "python3 -c 'import aiohttp,os,json,time;print(json.dumps({\"hostname\":os.uname().nodename,\"cpu\":os.cpu_count(),\"unix\":time.time()}))'"
@@ -49,13 +52,24 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--inventory',type=pathlib.Path,default=ROOT/'release/load-generators-active-20261018.json')
     parser.add_argument('--update-inventory',action='store_true')
+    parser.add_argument('--staging-ssh-allowlist', required=True,
+                        help='Comma-separated canonical staging IPv4 addresses.')
     args=parser.parse_args()
+    try:
+        allowlist = parse_staging_ssh_allowlist(args.staging_ssh_allowlist)
+    except ValueError as error:
+        raise SystemExit(str(error))
     inventory=json.loads(args.inventory.read_text(encoding='utf-8-sig'))
     if not 1<=len(inventory['generators'])<=8 or any(n.get('destroyed') is True for n in inventory['generators']):
         raise SystemExit('Expected one to eight active disposable generators; retired inventories must not be reused')
-    for node in inventory['generators']:accept_host(node)
+    try:
+        for node in inventory['generators']:
+            check_scope(node, allowlist)
+    except ValueError as error:
+        raise SystemExit(str(error))
+    for node in inventory['generators']:accept_host(node, allowlist)
     with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
-        results=list(pool.map(prepare,inventory['generators']))
+        results=list(pool.map(lambda node: prepare(node, allowlist), inventory['generators']))
         for result in results:
             print(json.dumps(result),flush=True)
     if args.update_inventory:

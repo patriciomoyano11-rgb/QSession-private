@@ -24,7 +24,10 @@ async def check_async(standard_context=False):
 asyncio.run(check_async())
 asyncio.run(check_async(True))
 '''
-encoded=base64.b64encode(script.encode()).decode()
-command='python3 -c "import base64;exec(base64.b64decode(\''+encoded+'\'))"'
-args=['ssh','-T','-i','C:/Users/maria/.ssh/qsession_deploy_ed25519','-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12','root@45.76.25.22',command]
-subprocess.run(args,check=True)
+def main():
+    """Disabled. The embedded probe targets the production playback host."""
+    raise SystemExit('Refusing to diagnose the production playback host')
+
+
+if __name__ == '__main__':
+    main()

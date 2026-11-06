@@ -15,5 +15,9 @@ print(json.dumps({'ownedSyntheticOriginStopped':bool(matches),'alreadyFinished':
 """
 encoded=base64.b64encode(code.encode()).decode()
 command='python3 -c "import base64;exec(base64.b64decode(\''+encoded+'\'))"'
+def main():
+    raise SystemExit('Refusing to SSH to the production encoder')
+
+
 if __name__=='__main__':
- subprocess.run(['ssh','-T','-i','C:/Users/maria/.ssh/qsession_deploy_ed25519','-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12','root@45.77.192.82',command],check=True)
+    main()

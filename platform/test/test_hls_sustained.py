@@ -273,6 +273,7 @@ class SessionRestartFlow(unittest.IsolatedAsyncioTestCase):
             TraceConfig=TraceConfig)
         args = types.SimpleNamespace(clients=1, ramp=1, hold=22, reconnect_after=3, transport='aiohttp',
                                      tokens_file=True, start_at_unix=0, progress=False)
+        client.configure_delivery_host('live.staging.qsession.test')
         output = io.StringIO()
         with mock.patch.dict(sys.modules, {'aiohttp': fake}), \
              mock.patch.object(client, 'read_tokens', return_value=[token]), \
