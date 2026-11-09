@@ -31,7 +31,8 @@ Ese 1–2 s **no sale** de acortar el HLS actual. El camino recomendado es un so
 | Perfil ensayado en la operación | `platform/docs/BROADCAST-10000.md` | H.264 1280×720, vídeo 1,6 Mb/s, AAC 128 kb/s, segmentos de **6 s**. El propio documento dice que AAC a 320 kb/s es otro perfil y no está validado. |
 | Audiencia `cdn-only` reproduce con hls.js o con el vídeo nativo de Safari | `platform/public/app.js` alrededor de las líneas 6718–6750 | Implementado. hls.js lleva `lowLatencyMode: true` y `liveSyncDurationCount: 2`. Eso no crea partes LL-HLS si el manifiesto no las trae. Con segmentos de 6 s, dos segmentos son unos 12 s de borde. |
 | Admisión Redis en cada GET, presupuesto de búfer y rechazo de producción | PR #4, sobre todo `platform/edge/hls-worker.js` y `platform/scripts/load_target_policy.py` | En la rama del PR, no en `main` hasta fusionarlo. No cambia el códec, el segmento ni el reloj del reproductor. |
-| Reloj común, PTS, epoch, corrección de deriva, failover con la misma línea de tiempo, medición acústica | — | **No implementado.** Este ADR solo lo especifica. |
+| Reloj local de tramas de 20 ms | `platform/audio-timeline.js` y `platform/test/audio-timeline.test.js` | Simulador sin red. No mide teléfonos, no mueve audio y no certifica 10.000. |
+| Epoch firmado, fan-out, failover con la misma línea de tiempo, medición acústica | — | **No implementado.** |
 | 10.000 oyentes estables | `SCALE-1M-ROADMAP.md`, `BROADCAST-10000.md` | **No demostrado.** Las tandas de 10.000 siguen fallidas. La de 1.500 no se reescribe como éxito de capacidad. |
 
 `lowLatencyMode` en hls.js no convierte un manifiesto de segmentos de 6 s en LL-HLS. El Worker tampoco parte los segmentos: `LIVE_OBJECT_PATTERN` admite `.ts` y `.m4s` enteros, no un protocolo de partes.
@@ -189,20 +190,19 @@ Mientras el empaquetador LL-HLS no exista, la latencia honesta del código es la
 
 ## 8. Fases
 
-Ninguna fase de esta lista está hecha, salvo la escritura de este documento.
+La fase 2 es un simulador local. Las fases 3 a 5 no están hechas.
 
 1. **Documento.** Este ADR. Sin cambio de `edge-broadcast.js`, del Worker ni del reproductor.
-2. **Simulador local de reloj.** Un módulo nuevo, sin red, que avance dos relojes con deriva, pérdida de tramas y RTT. Tiene que fallar si la corrección supera el 0,2 %, si hay un salto de playhead o si el desfase pasa de 40 ms en el percentil que fije la prueba. No usa LiveKit ni R2.
+2. **Simulador local de reloj.** `platform/audio-timeline.js` avanza dos relojes con deriva, pérdida de tramas y RTT. Rechaza una corrección mayor del 0,2 %. Una deriva del 1 % no cabe en 40 ms y la prueba lo exige así. No usa LiveKit ni R2 y no sustituye el laboratorio de dispositivos.
 3. **Laboratorio de dispositivos.** Teléfonos reales, cable y Bluetooth, micrófono de referencia frente al altavoz o al auricular. Se publican p95 y p99 de latencia DJ → aire y de desfase entre dos aparatos. Los umbrales de la sección 5 son la hipótesis. El informe puede rechazarlos. No es una carga de 10.000.
 4. **Staging, con otra autorización de gasto.** Una mezcla, un codificador, unos pocos fan-out, rampas muy por debajo de 10.000. Hace falta el staging aislado del PR #4 y una decisión explícita de gastar. Este ADR no la toma.
 5. **Solo entonces** se habla de 10.000 oyentes de audio. Sigue sin ser el vídeo de 1,7 Mb/s ni el millón de oyentes de `SCALE-1M-ROADMAP.md`.
 
 ## 9. Backlog para implementar después
 
-No hacerlo en la misma tanda que este texto.
+El simulador local ya está en el repositorio. Lo demás no se hace en esta fase.
 
-- `platform/audio-timeline.js` (nuevo): epoch, trama de 20 ms, búfer, deriva máxima 0,2 %, pérdidas. API pura, sin sockets.
-- `platform/test/audio-timeline.test.js`: los casos de la fase 2, incluidos un reloj que se adelanta, tres tramas perdidas y un unirse tarde.
+- `platform/audio-timeline.js` y su prueba local ya existen. Sigue faltando publicarlo en el reproductor y firmar el epoch en el plano de control.
 - `platform/edge-broadcast.js`: no cambiar el perfil de 6 s en la misma revisión que el simulador. Una revisión posterior puede añadir un modo de solo audio **desactivado por defecto**, sin subir el bitrate de la sala de vídeo a 320 kb/s por sorpresa.
 - `platform/public/app.js`: el oyente de silent party no puede ser el `Hls` de las líneas 6718–6746. Hace falta un reproductor distinto que consuma el epoch. Hasta que exista, la página sigue en HLS.
 - Fan-out: proceso nuevo que copie RTP y no importe `livekit-server-sdk` para “meter suscriptores en `qsession-${code}`”.
