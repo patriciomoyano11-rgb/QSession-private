@@ -2,6 +2,8 @@
 
 Estado: análisis y cambios locales de octubre de 2026. `capacityCertified` sigue en falso. Este documento no anuncia aforo comercial, no despliega nada y no sustituye una prueba nueva. La sala real citada en la operación sigue en el modo anterior hasta que exista evidencia sostenida.
 
+El perfil de audio para una sala lógica de 10.000 oyentes, a 320 kb/s y con objetivo de 1–2 s, está solo diseñado en `ADR-AUDIO-10K.md`. Ese texto no está implementado y no convierte en éxito las pruebas de R2 o de 10.000 que este documento sigue tratando como fallidas.
+
 La reconstrucción de la prueba de 1.500 usa los números publicados en `BROADCAST-10000.md` y `LOAD-RETIREMENT.md`, más el código del cliente (`platform/scripts/hls-load-client.py`) y del agregador (`platform/scripts/orchestrate-hls-load.py`). El expediente `release/media-diagnostic-closeout-20261020.json` se cita en esos documentos y no está en este checkout. Donde el JSON decidiría un detalle, el texto lo dice.
 
 No se ejecutó ninguna carga ni ninguna llamada a Cloudflare, Vultr, LiveKit o qsession.org para escribir esto.
