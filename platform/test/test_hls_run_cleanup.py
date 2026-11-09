@@ -165,9 +165,10 @@ class OriginControlTests(unittest.TestCase):
             'botocore.config':types.SimpleNamespace(Config=lambda **kwargs:None),
             'botocore.exceptions':types.SimpleNamespace(ClientError=ClientError)}
         command='' if reason is None else json.dumps({'command':'stop','runId':RUN,'reason':reason})+'\n'
-        args=types.SimpleNamespace(delivery_host='live.qsession.org',duration=12,control_stdin=control)
+        args=types.SimpleNamespace(delivery_host='live.staging.qsession.test',duration=12,control_stdin=control)
         with mock.patch.dict(sys.modules,modules),mock.patch.object(origin,'read_credentials',return_value={
-                'accessKey':'offline','secretKey':'offline'}),mock.patch.object(origin.secrets,'token_hex',return_value=RUN), \
+                'accessKey':'offline','secretKey':'offline','endpoint':'https://staging.r2.invalid',
+                'bucket':'qsession-live-staging'}),mock.patch.object(origin.secrets,'token_hex',return_value=RUN), \
                 mock.patch.object(origin.subprocess,'run',side_effect=render), \
                 mock.patch.object(origin,'inspect_segment',return_value={'bytes':188}), \
                 mock.patch.object(origin,'signal',types.SimpleNamespace(SIGINT=2,SIGTERM=15,SIGALRM=14,
@@ -219,7 +220,7 @@ class RunnerCleanupTests(unittest.TestCase):
             (scripts/'hls_candidate_readiness.py').write_text('def require_published_candidate(root):\n return '+repr({
                 'sourceSha256':digest,'readyForPaidLoadPreparation':True})+'\n')
             nodes=[{'label':f'qsession-load-offline-{index}','ownedForThisTest':True,'destroyed':False,
-                'sshReady':True,'logicalCpuCount':8} for index in range(7)]
+                'sshReady':True,'logicalCpuCount':8,'ip':f'10.8.1.{index+1}'} for index in range(7)]
             inventory={'generators':nodes,'candidateSourceSha256':digest,'scope':{'maximumInstances':7},
                 'newBudget':{'additionalComputeLimitUsd':2.10,'previousObservedComputeUsd':0},
                 'fullMediaRepeatStage':{'maximumExecutions':1,'clients':10000,'holdSeconds':620,
@@ -227,7 +228,9 @@ class RunnerCleanupTests(unittest.TestCase):
                 'priorStageAccounting':{}}
             inventory_path=release/'inventory.json';inventory_path.write_text(json.dumps(inventory))
             args=types.SimpleNamespace(inventory=inventory_path,suffix='media-full-cleanup-offline',
-                clients=10000,hold=620,reconnect_after=240,workers_per_node=8,transport='aiohttp')
+                clients=10000,hold=620,reconnect_after=240,workers_per_node=8,transport='aiohttp',
+                delivery_host='live.staging.qsession.test',encoder_host='10.8.0.5',api_host='10.8.0.6',
+                staging_ssh_allowlist='10.8.0.5,10.8.0.6,'+','.join(f'10.8.1.{index+1}' for index in range(7)))
             publisher=FakeOrigin();watcher=FakeObserver(stubborn);calls=[]
             def popen(command, **kwargs):
                 self.assertIs(kwargs['stdin'],subprocess.PIPE)

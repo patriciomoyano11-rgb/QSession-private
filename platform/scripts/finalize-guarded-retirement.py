@@ -69,6 +69,7 @@ print(json.dumps({'checkedAt':datetime.datetime.now(datetime.timezone.utc).isofo
 '''
 
 def main():
+    raise SystemExit('Refusing to SSH to the production encoder')
     parser=argparse.ArgumentParser()
     parser.add_argument('--inventory',type=pathlib.Path,default=LEDGER)
     parser.add_argument('--output',type=pathlib.Path,default=ROOT/'release/guarded-retirement-verified-20261020.json')

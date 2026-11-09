@@ -99,15 +99,16 @@ test('only allowlisted private failure headers pass through the outer boundary',
   }
 });
 
-test('edge fill rejection is terminal and cannot retry the same actor or expose provider details', async () => {
+test('edge fill rejection still delivers the verified body and hides provider details', async () => {
   const h = harness(); let requests = 0;
   const get = outerFixture(h, async () => { requests++; return new Response('complete', {headers: {'Content-Length': '8'}}); });
   h.scope.caches = {default: {async match() {}, async put() { throw new Error('private storage details'); }}};
   const response = await get();
-  assert.equal(response.status, 503);
-  assert.equal(requests, 1); assert.equal(response.headers.get('X-QSession-Media-Failure'), 'edge-fill');
-  assert.equal(response.headers.get('X-QSession-Cache-Fill-State'), 'failed');
-  assert.equal(h.logs.length, 1); assert.match(h.logs[0], /edge-fill/);
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), 'complete');
+  assert.equal(requests, 1);
+  assert.equal(response.headers.get('X-QSession-Cache-Fill-State'), 'verified');
+  assert.equal(String(response.headers.get('X-QSession-Media-Failure') || ''), '');
   assert.equal(h.logs.join('').includes('private storage'), false);
 });
 

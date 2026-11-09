@@ -7,6 +7,9 @@ import subprocess
 import sys
 import threading
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from load_target_policy import parse_staging_ssh_allowlist, require_allowlisted_staging_ssh
+
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 code=r'''
 const fs=require('node:fs');const {createClient}=require('redis');const {createBroadcastAdmissions}=require('./broadcast-admissions');
@@ -72,11 +75,20 @@ if __name__=='__main__':
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output',type=pathlib.Path,default=ROOT/'release/load-redis-observations-20261018.json')
     parser.add_argument('--duration',type=int,default=125)
+    parser.add_argument('--api-host', required=True,
+                        help='Staging API IPv4. The production app server is refused.')
+    parser.add_argument('--staging-ssh-allowlist', required=True,
+                        help='Comma-separated canonical staging IPv4 addresses.')
     args=parser.parse_args()
+    try:
+        api_host = require_allowlisted_staging_ssh(
+            args.api_host, parse_staging_ssh_allowlist(args.staging_ssh_allowlist))
+    except ValueError as error:
+        raise SystemExit(str(error))
     if not 125<=args.duration<=800:raise SystemExit('Invalid observation duration')
     code=code.replace('OBSERVATION_SAMPLES',str((args.duration+4)//5))
     code=code.replace('OBSERVATION_WATCHDOG_MS',str((args.duration+10)*1000))
     expr="eval(Buffer.from('"+base64.b64encode(code.encode()).decode()+"','base64').toString())"
-    cmd=['ssh','-T','-i','C:/Users/maria/.ssh/qsession_deploy_ed25519','-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12','root@104.238.137.144',
+    cmd=['ssh','-T','-i','C:/Users/maria/.ssh/qsession_deploy_ed25519','-o','BatchMode=yes','-o','IdentitiesOnly=yes','-o','StrictHostKeyChecking=yes','-o','ConnectTimeout=12','root@'+api_host,
          'docker exec -i qsession-qsession-app-1 node -e "'+expr+'"']
     raise SystemExit(run_observation(cmd,args.output,args.duration))

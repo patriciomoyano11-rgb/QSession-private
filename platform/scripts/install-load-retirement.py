@@ -66,7 +66,8 @@ print(proof.stdout.strip())
 
 
 def main():
-    # Explicit execution command. Importing this module never touches a host.
+    # The only SSH target is the production encoder. Import stays local.
+    raise SystemExit('Refusing to SSH to the production encoder')
     result = subprocess.run(['ssh', '-T', '-i', 'C:/Users/maria/.ssh/qsession_deploy_ed25519',
         '-o', 'BatchMode=yes', '-o', 'IdentitiesOnly=yes', '-o', 'StrictHostKeyChecking=yes',
         '-o', 'ConnectTimeout=12', 'root@45.77.192.82', '/usr/bin/python3 -'],

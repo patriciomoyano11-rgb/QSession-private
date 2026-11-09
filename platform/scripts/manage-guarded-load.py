@@ -38,6 +38,7 @@ print(json.dumps({'retireRequested':RETIRE_NOW,'nodes':results,'timerNotDisabled
 '''
 
 def main():
+    raise SystemExit('Refusing to SSH to the production encoder')
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--retire-now',action='store_true')
     parser.add_argument('--inventory',type=pathlib.Path,default=LEDGER)

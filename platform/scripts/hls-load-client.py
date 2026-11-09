@@ -31,10 +31,58 @@ try:
 except ImportError:  # Allow stdlib parser tests on Windows.
     resource = None
 
-DELIVERY_HOSTS = ('qsession-live.patriciomoyano11.workers.dev', 'live.qsession.org')
-HOST = DELIVERY_HOSTS[0]
 PREFIX = '/live/PRB10A-hWrdBkirH_2yHmZ9lp/'
-URL = 'https://' + HOST + PREFIX + 'index.m3u8'
+# Populated only after an explicit staging host is accepted. There is no
+# production default: a missing or production host must fail before any request.
+HOST = None
+URL = None
+# One-client pilots may name these. The load command line never does.
+KNOWN_CANARY_HOSTS = frozenset({
+    'live.qsession.org',
+    'qsession-live.patriciomoyano11.workers.dev',
+})
+
+
+def require_staging_delivery_host(host):
+    """Refuse production playback names. Safe to copy onto a load generator.
+
+    The body uses only its arguments and the stdlib so the orchestrator can
+    paste this function into the remote controller. The uploaded client is a
+    single file and must not import a sibling module.
+    """
+    import re as _re
+    if type(host) is not str:
+        raise ValueError('A staging delivery host is required')
+    raw = host.strip().lower()
+    if '://' in raw or '@' in raw or '/' in raw or '\\' in raw or ':' in raw or any(character.isspace() for character in raw):
+        raise ValueError('A staging delivery host is required')
+    if raw.endswith('.'):
+        raw = raw[:-1]
+    if not raw or '..' in raw:
+        raise ValueError('A staging delivery host is required')
+    if not _re.fullmatch(r'(?=.{1,253}$)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}', raw):
+        raise ValueError('A staging delivery host is required')
+    if _re.fullmatch(r'(?:\d{1,3}\.){3}\d{1,3}', raw):
+        raise ValueError('A staging delivery host is required')
+    labels = raw.split('.')
+    production = {
+        'live.qsession.org',
+        'www.qsession.org',
+        'qsession.org',
+        'media.qsession.org',
+        'qsession-live.patriciomoyano11.workers.dev',
+    }
+    if raw in production or raw == 'qsession.org' or raw.endswith('.qsession.org'):
+        raise ValueError('Production delivery hosts are refused; pass a staging hostname')
+    for index in range(len(labels) - 1):
+        if labels[index] == 'qsession' and labels[index + 1] == 'org':
+            raise ValueError('Production delivery hosts are refused; pass a staging hostname')
+    if raw.endswith('.workers.dev') and not (labels[0] == 'qsession-live-staging' or (labels[0].endswith('-staging') and labels[0] != 'qsession-live')):
+        raise ValueError('workers.dev playback must use the staging worker name')
+    if not any(label == 'staging' or label.startswith('staging-') or label.endswith('-staging') or '-staging-' in label
+               for label in labels):
+        raise ValueError('Staging delivery host must include a staging DNS label')
+    return raw
 SEGMENT_SECONDS = 6
 RECENT_MEDIA_SECONDS = 12
 STALL_SECONDS = 18
@@ -67,12 +115,11 @@ STDLIB_CONNECTION_LOCK = threading.Lock()
 STDLIB_HTTP_WORKERS = 96
 
 
-def configure_delivery_host(host):
-    """Select only an owned endpoint; never forward probe leases elsewhere."""
-    if host not in DELIVERY_HOSTS:
-        raise ValueError('Delivery host is outside the isolated test scope')
+def configure_delivery_host(host, **_ignored):
+    """Select a staging playback host. Historical canary flags do not bypass this."""
+    selected = require_staging_delivery_host(host)
     global HOST, URL
-    HOST = host
+    HOST = selected
     URL = 'https://' + HOST + PREFIX + 'index.m3u8'
 
 
@@ -1006,7 +1053,8 @@ if __name__ == '__main__':
                         help='Coordinate generators at a Unix time up to 180 seconds ahead')
     parser.add_argument('--progress', action='store_true')
     parser.add_argument('--transport',choices=('aiohttp','stdlib','http2'),default='aiohttp')
-    parser.add_argument('--delivery-host',choices=DELIVERY_HOSTS,default=DELIVERY_HOSTS[0])
+    parser.add_argument('--delivery-host', required=True,
+                        help='Staging playback hostname. Production hosts are refused.')
     parser.add_argument('--tokens-file', type=pathlib.Path,
                         help='Optional root-only JSON array of one unique qsat lease token per client')
     args = parser.parse_args()
